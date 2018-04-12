@@ -1,7 +1,7 @@
 function [orderedFeatures,invalidFiles]=orderFeatures()
 wd=pwd;
 cd FEATURES;
-features=dir('*.mat');
+files=dir('*.mat');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Creating relevant structure where features will be stored %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,8 +13,8 @@ orderedStructs = struct('name',"", 'values2D',{cell(2,2)});
 invalidFiles=struct('fileName',"");
 sharedName="texture"; % Some texture features might share some name so we will extend their names to be unique (see retrieveAllFields.m for details)
 addName="";
-for fs=3:size(features)
-    curFile=features(fs).name;
+for file=3:size(files)
+    curFile=files(file).name;
     cd(wd);
     cd FEATURES;
     clear radiomics; %Clearing features for next load
@@ -41,6 +41,7 @@ for fs=3:size(features)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     try
         featuresTypes=fieldnames(radiomics.image);%featuresTypes={morph locInt stats intHist intVolHist texture};
+        fprintf("\nRetrieving features from radiomics structure : \n '%s' \n",curFile);
     catch
         fprintf("Current radiomics structure has no field image.\n");
         fprintf("Invalid file : ");
