@@ -24,7 +24,6 @@ for roiName=roisNames(1,:)
             autoFilesnames(end+1)=string(strcat('CSV/roiNames_',roichar(autoPos:autoEnd),'.csv'));
         end
     elseif ~isequal(visPos,[])
-        visEnd =  strfind(roiName,')');
         if visFilesnames==""
             visFilesnames=string(strcat('CSV/roiNames_',roichar(visPos:visEnd),'.csv'));
         else
@@ -44,19 +43,23 @@ end
 %Opening all csv files streams
 
 openFile=1;
-autoStream = fopen(autoFilesnames(1),'w');
+autoStream = fopen(autoFilesnames(1),'a+');
 for autoFilesname=autoFilesnames(2:end)
-    autoStream(end+1)=fopen(autoFilesnames(openFile),'w');
-    fprintf(autoStream(end),"PatientID,ImagingScanName,ImagingModality,ROIname\n");
     openFile=openFile+1;
+    autoStream(end+1)=fopen(autoFilesnames(openFile),'a+');
+    fprintf(autoStream(end),"PatientID,ImagingScanName,ImagingModality,ROIname\n");
 end
 openFile=1;
-visStream = fopen(visFilesnames(1),'w');
-for visFilesname=visFilesnames(2:end)
-    visStream(end+1)=fopen(visFilesnames(openFile),'w');
-    fprintf(visStream(end),"PatientID,ImagingScanName,ImagingModality,ROIname\n");
+visStream = fopen(visFilesnames(1),'a+');
+for visFilesname=visFilesnames(2:end) 
     openFile=openFile+1;
+    visStream(end+1)=fopen(visFilesnames(openFile),'a+');
+    fprintf(visStream(end),"PatientID,ImagingScanName,ImagingModality,ROIname\n");
 end
+
+
+keep visStream autoStream wd lesions roisNames
+
 
 for lesion=3:size(lesions,1)
     lName=lesions(lesion).name;
@@ -64,16 +67,18 @@ for lesion=3:size(lesions,1)
     for names=6:10 %vis ROIs position
         CTROIName=roisNames(1,names);
         PTROIName=roisNames(2,names);
-        fprintf(visStream(writeFile),'%s,CT,CTscan,%s\n',lName,CTROIName);
-        fprintf(visStream(writeFile),'%s,PET,PTscan,%s\n',lName,PTROIName);
+        vs=visStream(writeFile);
+        fprintf(vs,"%s,CT,CTscan,%s\n",lName,CTROIName);
+        fprintf(vs,"%s,PET,PTscan,%s\n",lName,PTROIName);
         writeFile=writeFile+1;
     end
     writeFile=1;
     for names=[3,4,5,12,13] %auto ROIs position
         CTROIName=roisNames(1,names);
         PTROIName=roisNames(2,names);
-        fprintf(autoStream(writeFile),'%s,CT,CTscan,%s\n',lName,CTROIName);
-        fprintf(autoStream(writeFile),'%s,PET,PTscan,%s\n',lName,PTROIName);
+        auto=autoStream(writeFile);
+        fprintf(auto,"%s,CT,CTscan,%s\n",lName,CTROIName);
+        fprintf(auto,"%s,PET,PTscan,%s\n",lName,PTROIName);
         writeFile=writeFile+1;
     end
 end
