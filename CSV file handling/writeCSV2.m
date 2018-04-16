@@ -4,12 +4,14 @@ autoFilesnames="";
 visFilesnames="";
 wd=pwd;
 %Get roi names, if not already existing
-if exist('roisNames')~=1
-    roisNames= getROInames();
+if exist('realROINames_1auto_1vis_rois')~=1
+    load('realROINames_1auto_1vis.mat');
 end
 
+roiNames=realROINames_1auto_1vis_rois(1).CTroiNames;
+roiNames=roiNames.';
 %Generate csv files names
-for roiName=roisNames(1,:)
+for roiName=roiNames
     roichar=char(roiName);
     visPos = strfind(roiName,'vis');
     autoPos = strfind(roiName,'auto');
@@ -51,35 +53,52 @@ for autoFilesname=autoFilesnames(2:end)
 end
 openFile=1;
 visStream = fopen(visFilesnames(1),'a+');
-for visFilesname=visFilesnames(2:end) 
+for visFilesname=visFilesnames(2:end)
     openFile=openFile+1;
     visStream(end+1)=fopen(visFilesnames(openFile),'a+');
     fprintf(visStream(end),"PatientID,ImagingScanName,ImagingModality,ROIname\n");
 end
 
 
-keep visStream autoStream wd lesions roisNames
+keep visStream autoStream wd lesions realROINames_1auto_1vis_rois
 
 
 for lesion=3:size(lesions,1)
     lName=lesions(lesion).name;
     writeFile=1;
-    for names=6:10 %vis ROIs position
-        CTROIName=roisNames(1,names);
-        PTROIName=roisNames(2,names);
-        vs=visStream(writeFile);
-        fprintf(vs,"%s,CT,CTscan,%s\n",lName,CTROIName);
-        fprintf(vs,"%s,PET,PTscan,%s\n",lName,PTROIName);
-        writeFile=writeFile+1;
-    end
-    writeFile=1;
-    for names=[3,4,5,12,13] %auto ROIs position
-        CTROIName=roisNames(1,names);
-        PTROIName=roisNames(2,names);
-        auto=autoStream(writeFile);
-        fprintf(auto,"%s,CT,CTscan,%s\n",lName,CTROIName);
-        fprintf(auto,"%s,PET,PTscan,%s\n",lName,PTROIName);
-        writeFile=writeFile+1;
+    roisComplete=true;
+    
+    try
+        for names=4:8 %vis ROIs position
+            CTROIName=realROINames_1auto_1vis_rois(lesion-2).CTroiNames(names);
+            PTROIName=realROINames_1auto_1vis_rois(lesion-2).PTroiNames(names);
+            vs=visStream(writeFile);
+            fprintf(vs,"%s,CT,CTscan,%s\n",lName,CTROIName);
+            fprintf(vs,"%s,PET,PTscan,%s\n",lName,PTROIName);
+            writeFile=writeFile+1;
+        end
+        writeFile=1;
+        for names=[1,2,3,9,10] %auto ROIs position
+            CTROIName=realROINames_1auto_1vis_rois(lesion-2).CTroiNames(names);
+            PTROIName=realROINames_1auto_1vis_rois(lesion-2).PTroiNames(names);
+            auto=autoStream(writeFile);
+            fprintf(auto,"%s,CT,CTscan,%s\n",lName,CTROIName);
+            fprintf(auto,"%s,PET,PTscan,%s\n",lName,PTROIName);
+            writeFile=writeFile+1;
+        end
+        
+    catch
+        sprintf('Current lesion ROIs seem to be incomplete :\n%s\n',lName);
+        writeFile=1;
+        for names=1:5
+            %vis ROIs position for one peculiar file. This code won't work for another dataset !
+            CTROIName=realROINames_1auto_1vis_rois(lesion-2).CTroiNames(names);
+            PTROIName=realROINames_1auto_1vis_rois(lesion-2).PTroiNames(names);
+            vs=visStream(writeFile);
+            fprintf(vs,"%s,CT,CTscan,%s\n",lName,CTROIName);
+            fprintf(vs,"%s,PET,PTscan,%s\n",lName,PTROIName);
+            writeFile=writeFile+1;
+        end
     end
 end
 

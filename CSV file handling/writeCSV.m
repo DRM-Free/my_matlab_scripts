@@ -1,4 +1,5 @@
-function []=writeCSV(roisNames)
+function []=writeCSV()
+roisNames= getROInames();
 wd=pwd;
 visPath=fullfile(wd,'CSV','roiNames-visRW.csv');
 autoPath=fullfile(wd,'CSV','roiNames-autoRW.csv');
