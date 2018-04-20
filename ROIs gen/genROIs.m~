@@ -15,35 +15,34 @@ selectedPoint=ceil(rand()*numel(selectibleIndices)); %Can all selectible points 
 
 %Selecting mask dimensions
 maxMaskSize=min([x,y,z,roiSizeX-x,roiSizeY-y,roiSizeZ-z]); %Mask size must fit chosen point position and roi size dimensions
-maskSize=ceil(max(rand()*(maxMaskSize-1),maxMaskSize/3)); %size in dimension z is smaller, let's not exceed it
-offset=(maskSize)/2; %We need to ensure mask size and touchRegion size are perfectly equal
-touchRegion=newROI_obj.data(x-offset:x+offset,y-offset:y+offset,z-offset:z+offset); %Region to edit
-maskSize=maskSize+1; %touchRegion would be 1 unit larger in each dimension because of x-offset:x+offset interval
+maskSize=ceil(max(rand()*maxMaskSize,maxMaskSize/3)); %size in dimension z is smaller, let's not exceed it
+maskSize=maskSize+mod(maskSize,2); %Only keeping mask sizes that are not a multiple of 2
 mask=genMask(maskSize);
+offset=(maskSize+1)/2-1; %We need to ensure mask size and touchRegion size are perfectly equal
+
+touchRegion=newROI_obj.data(x-offset:x+offset,y-offset:y+offset,z-offset:z+offset); %Region to edit
 
 expand=rand()>0.5; %expand or Shrink ?
 
 % if expand
 %setting roi points to 1 where mask is 1;
 expandedRegion=touchRegion;
-expandedRegion(mask==1)=1; %expand tier 1. To be perfected
+expandedRegion(mask==1)=1;
 
 % else
-%setting roi points to 0 where mask is 1;
 ShrinkedRegion=touchRegion;
-ShrinkedRegion(mask==1)=0; %shrink tier 1. To be perfected
+expandedRegion(mask==1)=1;
 
-% sx=size(ShrinkedRegion,1);
-% sy=size(ShrinkedRegion,2);
-% sz=size(ShrinkedRegion,3);
-% cv=convn(ShrinkedRegion,mask);
-% cvsx=size(cv,1);
-% cvsy=size(cv,2);
-% cvsz=size(cv,3);
-% cv=cv(cvsx/2-sx/2:cvsx/2+sx/2,cvsy/2-sy/2:cvsy/2+sy/2,cvsz/2-sz/2:cvsz/2+sz/2);
-% cv=imresize3(cv,size(ShrinkedRegion,1)/size(cv,1));
-% ShrinkedRegion(cv<300)=0;
-
+sx=size(ShrinkedRegion,1);
+sy=size(ShrinkedRegion,2);
+sz=size(ShrinkedRegion,3);
+cv=convn(ShrinkedRegion,mask);
+cvsx=size(cv,1);
+cvsy=size(cv,2);
+cvsz=size(cv,3);
+cv=cv(cvsx/2-sx/2:cvsx/2+sx/2,cvsy/2-sy/2:cvsy/2+sy/2,cvsz/2-sz/2:cvsz/2+sz/2);
+cv=imresize3(cv,size(ShrinkedRegion,1)/size(cv,1));
+ShrinkedRegion(cv<300)=0;
 % end
 
 newROI_obj.data(x-offset:x+offset,y-offset:y+offset,z-offset:z+offset)=expandedRegion;

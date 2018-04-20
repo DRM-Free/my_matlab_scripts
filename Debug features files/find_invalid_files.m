@@ -27,7 +27,6 @@ for file=1:size(files)
                 otherInvalids(end+1)=struct('featureFileName',curFile,'dataFileName',"", 'modality', "");
             end
             otherInvalids(end)=find_data_file(otherInvalids(end));
-            
         end
     end
 end
