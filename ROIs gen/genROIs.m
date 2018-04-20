@@ -33,17 +33,6 @@ expandedRegion(mask==1)=1; %expand tier 1. To be perfected
 ShrinkedRegion=touchRegion;
 ShrinkedRegion(mask==1)=0; %shrink tier 1. To be perfected
 
-% sx=size(ShrinkedRegion,1);
-% sy=size(ShrinkedRegion,2);
-% sz=size(ShrinkedRegion,3);
-% cv=convn(ShrinkedRegion,mask);
-% cvsx=size(cv,1);
-% cvsy=size(cv,2);
-% cvsz=size(cv,3);
-% cv=cv(cvsx/2-sx/2:cvsx/2+sx/2,cvsy/2-sy/2:cvsy/2+sy/2,cvsz/2-sz/2:cvsz/2+sz/2);
-% cv=imresize3(cv,size(ShrinkedRegion,1)/size(cv,1));
-% ShrinkedRegion(cv<300)=0;
-
 % end
 
 newROI_obj.data(x-offset:x+offset,y-offset:y+offset,z-offset:z+offset)=expandedRegion;

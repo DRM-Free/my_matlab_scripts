@@ -31,7 +31,7 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
         end
         if process
             [volObj,roiObj] = getROI(sData,roi,'2box');
-            ROIs_one_roiObj=cat(1,ROIs_one_roiObj,genROIs(roiObj)); %Here we generate only one roi per given roi at the start
+            ROIs_one_roiObj=cat(1,ROIs_one_roiObj,genROIs_tier2(roiObj)); %Here we generate only one roi per given roi at the start
             %We could put it in a for loop and do it more times
         end
     end
