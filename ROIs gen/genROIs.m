@@ -36,18 +36,9 @@ ShrinkedRegion(mask==1)=0; %shrink tier 1. To be perfected
 % end
 
 newROI_obj.data(x-offset:x+offset,y-offset:y+offset,z-offset:z+offset)=expandedRegion;
-fullRegion=roiObj.data;
-newExpandedFullRegion=newROI_obj.data;
 
 newROI_obj.data(x-offset:x+offset,y-offset:y+offset,z-offset:z+offset)=ShrinkedRegion;
-newShrinkedFullRegion=newROI_obj.data;
 
-save('newExpandedFullRegion','newExpandedFullRegion');
-save('newShrinkedFullRegion','newShrinkedFullRegion');
-save('fullRegion','fullRegion');
-save('touchRegion','touchRegion');
-save('expandedRegion','expandedRegion');
-save('ShrinkedRegion','ShrinkedRegion');
 
 %Re-setting roiOBJ with correct spatial references
 newROI_obj=interpVolume(newROI_obj,[0.9766,0.9766,5],'linear',0.5,'roi');

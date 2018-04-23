@@ -4,8 +4,7 @@ dataPaths=dataPaths.';
 ROIs_all_roiObj=[];
 for dataPath=dataPaths %For one data file featuring all rois for one patient and one modality
     
-    %Generating masks (for erosion and dilation)
-    
+    %Generating masks
     
     %Loading data file
     load(strcat('DATA/',dataPath.name));
@@ -16,8 +15,8 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
     
     %Generating all new rois
     ROIs_one_roiObj=[];
-    for roi=1:numel(rois) %For one roi, one patient and one modality only
-        roiName=rois(roi);
+    for roiNum=1:numel(rois) %For one roi, one patient and one modality only
+        roiName=rois(roiNum);
         
         %Removing unused rois
         roiName=roiName.name;
@@ -30,8 +29,27 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
             process=false; %If image type is not recognized after that point then no ROI is processed
         end
         if process
-            [volObj,roiObj] = getROI(sData,roi,'2box');
-            ROIs_one_roiObj=cat(1,ROIs_one_roiObj,genROIs_tier2(roiObj)); %Here we generate only one roi per given roi at the start
+            [volObj,roiObj] = getROI(sData,roiNum,'2box');
+            %Setting data to be modified with normalized spatial references
+            roi=interpVolume(roiObj,[1,1,1],'linear',0.5,'roi'); %Just copying roiObj as only the data is meant to change and not the spatialref
+            roiObj.spatialRef = roi.spatialRef;
+            if type=='CTscan'
+                vol=interpVolume(volObj,[1,1,1],'linear',1,'image');
+            else
+                vol=interpVolume(volObj,[1,1,1],'linear',[],'image');
+            end
+            volObj.spatialRef = vol.spatialRef;
+            roi=roi.data;
+            vol=vol.data;
+            newROI=genROIs_tier2(roi,vol,50,true); %Last argument is for enabling better region choice
+            %Applying new dara to roiObj
+            roiObj.data=newROI;
+            save('roi','roi');
+            save('newROI','newROI');
+            %Re-setting roiOBJ with correct spatial references
+            roiObj=interpVolume(roiObj,[0.9766,0.9766,5],'linear',0.5,'roi');
+            newROI=roiObj.data;
+%             ROIs_one_roiObj=cat(1,ROIs_one_roiObj,roiObj); %Here we generate only one roi per given roi at the start
             %We could put it in a for loop and do it more times
         end
     end

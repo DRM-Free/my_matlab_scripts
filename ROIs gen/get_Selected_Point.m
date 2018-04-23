@@ -5,7 +5,7 @@
 %otherwise the erode or dilate transform would do nothing.
 
 
-function [selectibleIndices]=get_Selectible_Points(roi)
+function [x,y,z]=get_Selected_Point(roi)
 %The circular mask can't be used anywhere like that, as it would either add or remove
 %huge circular shapes to ROI or even do nothing if applied completely inside or outside of
 %the tumor.
@@ -15,16 +15,21 @@ laplacian(:,:,2)=[-1,-1,-1;-1,26,-1;-1,-1,-1];
 laplacian(:,:,3)=laplacian(:,:,1);
 
 %Choosing only selectible points among the one where laplacian > 3
-selectible=convn(roi,laplacian);
-for sel=1:numel(selectible)
-    if selectible(sel)>3
-selectible(sel)=1;
-    else
-        selectible(sel)=0;
-    end
-    
-end
+%(good tradeoff between being able to select everywhere and keeping only the borders)
+selectiblePoints=convn(roi,laplacian);
+
 %Eliminating enlarged borders after the convolution
-selectible=selectible(2:size(roi,1)+1,2:size(roi,2)+1,2:size(roi,3)+1);
-selectibleIndices=find(selectible==1);
+selectiblePoints=selectiblePoints(2:end-1,2:end-1,2:end-1);
+
+for sel=1:numel(selectiblePoints)
+    if selectiblePoints(sel)>3
+        selectiblePoints(sel)=1;
+    else
+        selectiblePoints(sel)=0;
+    end
+end
+selectableIndices=find(selectiblePoints==1);
+selectedPoint=ceil(rand()*numel(selectableIndices)); %Can all selectible points actually be used wit this line ?
+s=size(selectiblePoints); %Size does not seem to work here, why ?
+[x,y,z]=ind2sub(s,selectableIndices(selectedPoint));
 end
