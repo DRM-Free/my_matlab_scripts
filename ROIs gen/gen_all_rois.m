@@ -41,15 +41,16 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
             volObj.spatialRef = vol.spatialRef;
             roi=roi.data;
             vol=vol.data;
-            newROI=genROIs_tier2(roi,vol,50,true); %Last argument is for enabling better region choice
-            %Applying new dara to roiObj
+            newROI=genROIs_tier2(roi,vol,100,true); %Last argument is for enabling better region choice
+            %Applying new data to roiObj
             roiObj.data=newROI;
             save('roi','roi');
             save('newROI','newROI');
+            save('vol','vol');
             %Re-setting roiOBJ with correct spatial references
             roiObj=interpVolume(roiObj,[0.9766,0.9766,5],'linear',0.5,'roi');
             newROI=roiObj.data;
-%             ROIs_one_roiObj=cat(1,ROIs_one_roiObj,roiObj); %Here we generate only one roi per given roi at the start
+            %ROIs_one_roiObj=cat(1,ROIs_one_roiObj,roiObj); %Here we generate only one roi per given roi at the start
             %We could put it in a for loop and do it more times
         end
     end
