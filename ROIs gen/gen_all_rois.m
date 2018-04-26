@@ -2,6 +2,9 @@ function ROIs_all_roiObj=gen_all_rois()
 dataPaths=dir('DATA/*.mat');
 dataPaths=dataPaths.';
 ROIs_all_roiObj=[];
+ROIs_from_all=struct;
+processedPaths=0;
+iterationsCounts=[10 20 30 40 50 60 70 80 90 100];
 for dataPath=dataPaths %For one data file featuring all rois for one patient and one modality
     
     %Generating masks
@@ -12,7 +15,7 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
     rois = sData{1,2}.scan.contour;
     rois=rois.';
     type=sData{1,2}.type;
-    
+    patientName=sData{1,4}.PatientID;
     %Generating all new rois
     ROIs_one_roiObj=[];
     for roiNum=1:numel(rois) %For one roi, one patient and one modality only
@@ -29,7 +32,8 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
             process=false; %If image type is not recognized after that point then no ROI is processed
         end
         if process
-            [volObj,roiObj] = getROI(sData,roiNum,'2box');
+            ROIs_from_one=struct('patient_name',patientName,'original_ROI_name',roiName,'generated_ROIs',0);
+            [~,roiObj] = getROI(sData,roiNum,'full');
             %Setting data to be modified with normalized spatial references
             roi=interpVolume(roiObj,[1,1,1],'linear',0.5,'roi'); %Just copying roiObj as only the data is meant to change and not the spatialref
             roiObj.spatialRef = roi.spatialRef;
@@ -41,20 +45,34 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
             volObj.spatialRef = vol.spatialRef;
             roi=roi.data;
             vol=vol.data;
-            newROI=genROIs_tier2(roi,vol,100,true); %Last argument is for enabling better region choice
-            %Applying new data to roiObj
-            roiObj.data=newROI;
-            save('roi','roi');
-            save('newROI','newROI');
-            save('vol','vol');
-            %Re-setting roiOBJ with correct spatial references
-            roiObj=interpVolume(roiObj,[0.9766,0.9766,5],'linear',0.5,'roi');
-            newROI=roiObj.data;
-            %ROIs_one_roiObj=cat(1,ROIs_one_roiObj,roiObj); %Here we generate only one roi per given roi at the start
-            %We could put it in a for loop and do it more times
+            
+            for i=1:10
+                nIter=iterationsCounts(i);
+                newROI=genROIs_tier2(roi,vol,nIter,true); %Last argument is for enabling better region choice
+                try
+                    ROIs_from_one.generated_ROIs(end+1)=newROI;
+                catch
+                    ROIs_from_one.generated_ROIs=newROI;
+                end
+            end
+            %             %Applying new data to roiObj
+            %             roiObj.data=newROI;
+            %             save('roi','roi');
+            %             save('newROI','newROI');
+            %             save('vol','vol');
+            %             %Re-setting roiOBJ with correct spatial references
+            %             roiObj=interpVolume(roiObj,[0.9766,0.9766,5],'linear',0.5,'roi');
+            %             newROI=roiObj.data;
         end
     end
     clear sData;
-    ROIs_all_roiObj=cat(2,ROIs_all_roiObj,ROIs_one_roiObj);
+    try
+        ROIs_from_all(end+1)={ROIs_from_one};
+    catch
+        ROIs_from_all={ROIs_from_one};
+    end
+    processedPaths=processedPaths+1;
+    fprintf('%i of %i data files were processed',processedPaths,numel(dataPaths));
 end
+save('AllROIs/ROIs_from_all','ROIs_from_all');
 end

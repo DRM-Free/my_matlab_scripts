@@ -29,10 +29,14 @@ if better_selection
         %The choice between those options should be made in regard to the best knowledge available, maybe use
         %some radiomics features later rather than intensity histogram values
         selPointPosition=find(vol(x,y,z)<volObjPerc);
+        try
         selPointPosition=selPointPosition(1); %This is the position of the selected point in the intensity histogram
+        catch
+            selPointPosition=0; %The selected point contains an unusually big value. Better not keep this point.
+        end
         %The further from 50, the more chance to shrink
         %%%%%%%%%%%%%%%%%%%%%%%%%% THERE SEEMS TO BE NO EXPANSIONS WITH THIS SETUP %%%%%%%%%%%%%%%%%%%%%%%%%%
-        expand=(rand()*abs(selPointPosition-50)/50)<0.5; %If position is far from 50 then do not expand.
+        expand=(rand()*abs(selPointPosition-50))<50; %If position is far from 50 then do not expand.
         %Better make sure that when value is between 25th and 75th
         %percentile, the chances of expanding are greater than shrinking
         %(that would make sense). It seems to be the case here.
@@ -122,7 +126,7 @@ else
 end
 
 if numIter>=1
-    fprintf("%i Transforms to go for this ROI\n",numIter);
+%     fprintf("%i Transforms to go for this ROI\n",numIter);
     newROI=genROIs_tier2(newROI,vol,numIter,better_selection);
 end
 end
