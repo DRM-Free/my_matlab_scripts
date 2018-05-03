@@ -9,11 +9,13 @@ for roiNum=1:numel(rois) %First iterate over all rois in order to determine the 
     roiName=roiName.name;
     visPos = strfind(roiName,'1vis');
     autoPos = strfind(roiName,'1auto');
-    
-    if ~(isequal(autoPos,[])&isequal(visPos,[]))
-        process=true;
-    else
-        process=false;
+    gen=strfind(roiName,'gen');
+    if (isequal(gen,[])) %We don't want to generate contours from non original contours
+        if ~(isequal(autoPos,[])&isequal(visPos,[]))
+            process=true;
+        else
+            process=false;
+        end
     end
     if process
         [~,roiObj] = getROI(sData,roiNum,'box'); %Getting minimal cube inlcuding the tumor

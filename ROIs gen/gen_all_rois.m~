@@ -49,21 +49,17 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
                 %For expansion :
                 %false, >0.6 is not good (ROI becomes 0)
                 %false, >0.3 is not effective for actual expansion
-                %false, <0.3 and >0 is good
+                %false, <0.3 is good
                 % newROI=genROIs_simple(roi,5,0.2,5,false); %Fair expand
                 % newROI=genROIs_simple(roi,5,0.1,5,false); %Bigger expand
-                %newROI=genROIs_simple(roi,5,0.6,5,false); %This is actually a shrink
 
                 %For shrink:
-                %true, <0.5 and >0.3 is fair. Param should never superior
-                %to 0.7 (0.6 is the highest that worked), otherwise it overshrinks (and possibly matrix becomes 0).
-                %If smaller than 0.3 it becomes an expansion
-                %for genROIs_simple, when third param=0.1 : few modifications When =0.5
-                %newROI=genROIs_simple(roi,5,0.3,5,true); %Fair shrink
-%                 newROI=genROIs_simple(roi,5,0.5,5,true); %Fair shrink
-
-                %newROI=genROIs_simple(roi,5,0.1,5,true); %This is actually an expansion
-                newROI=genROIs_simple(roi,5,0.7,1,true); %Overshrink
+                %for genROIs_simple, when third param=0.1 : few
+                %modifications When =0.5
+%                 newROI=genROIs_simple(roi,5,0.3,5,true); %Fair shrink
+%                 newROI=genROIs_simple(roi,5,0.1,5,true); %This is actually an expansion
+%                 newROI=genROIs_simple(roi,5,0.6,5,false); %Overshrink
+%                 newROI=genROIs_simple(roi,5,0.6,5,true); %Overshrink
 
 %                 newROI=genROIs_simple(roi,5,0.3,5,true); %This seems not to do actual shrink or expand
 %                 newROI=genROIs_simple(roi,5,0.3,5,false); %This seems not to do actual shrink or expand, this just increases sphericity
