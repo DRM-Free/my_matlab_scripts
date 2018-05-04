@@ -1,56 +1,87 @@
-function [all_simple_rois]= genROIs_simple(roi,range)
+function [all_simple_rois]= genROIs_simple(roi,range,nIter)
 %range is the size of the area to be considered around each point for growth or shrink.
 %threshold represents how easy it will be to grow or shrink. 0 will always
 %grow, 1 will always shrink
-iterations=5;
-all_simple_rois=struct('rois_one_iter',[],'rois_tree_iter',[],'rois_five_iter',[]);
-good_shrink_thresholds=[0.3,0.35,0.4,0.45,0.5]; %Those thersholds were chosen for a range of 5
-good_expand_thresholds=[0.05,0.1,0.15,0.2,0.25];
+
+%Those thersholds were chosen for a range of 5
+% good_shrink_thresholds=[0.3,0.35,0.4,0.45,0.5]; %>0.5 can give unexpected behaviour, sometimes overshrink and matrix becomes 0
+good_shrink_thresholds=[0.3,0.325,0.35,0.4,0.42,0.5,0.55]; %>0.5 can give unexpected behaviour, sometimes overshrink and matrix becomes 0
+%<0.3 for shrink actually becomes an expand
+% good_expand_thresholds=[0.05,0.1,0.15,0.2,0.25]; %>0.3 is actually a shrink
+good_expand_thresholds=[0.3,0.275,0.25,0.2,0.16,0.1,0.06]; %>0.3 is actually a shrink
 mask=genMask(range);
 maxCv=numel(mask);
 shrink_ROI=roi;
 expand_roi=roi;
 
-for i=1:iterations
-    new_shrink_ROI=convn(shrink_ROI,mask,'same');
-    new_expand_roi=convn(expand_roi,mask,'same');
-    % shrink
-    for shrink_thresh=good_shrink_thresholds
-        shrink_ROI=new_shrink_ROI;
+% shrink
+for shrink_thresh=good_shrink_thresholds
+    thresh_field_name=strcat(strcat("thresh_",num2str(shrink_thresh)));
+    thresh_field_name=strrep(thresh_field_name,'.','');
+    thresh_field_name=char(thresh_field_name);
+    for i=1:nIter
+        iter_field_name=strcat(strcat("shrink_",num2str(i)),"_iter");
+        iter_field_name=char(iter_field_name);
+        
+        if i>1
+        previous_iter_field_name=strcat(strcat("shrink_",num2str(i-1)),"_iter");
+        previous_iter_field_name=char(previous_iter_field_name);
+        shrink_ROI=all_simple_rois.(previous_iter_field_name).(thresh_field_name);
+        else
+           shrink_ROI=roi; 
+        end
+        new_shrink_ROI=convn(shrink_ROI,mask,'same');
         cvThresh=shrink_thresh*maxCv;
-        shrink_ROI(shrink_ROI>=cvThresh)=-1;
-        shrink_ROI(shrink_ROI>0)=0;
-        shrink_ROI(shrink_ROI==-1)=1;
+        new_shrink_ROI(new_shrink_ROI>=cvThresh)=-1;
+        new_shrink_ROI(new_shrink_ROI>0)=0;
+        new_shrink_ROI(new_shrink_ROI==-1)=1;
         try
-            shrink_all_ROIs(end+1)=struct('thresh',shrink_thresh,'roi',shrink_ROI);
+            all_simple_rois.(iter_field_name).(thresh_field_name)=new_shrink_ROI;
         catch
-            shrink_all_ROIs=struct('thresh',shrink_thresh,'roi',shrink_ROI);
+            try
+                all_simple_rois.(iter_field_name).(thresh_field_name)=struct;
+                all_simple_rois.(iter_field_name).(thresh_field_name)=new_shrink_ROI;
+            catch
+                all_simple_rois=struct;
+                all_simple_rois.(iter_field_name).(thresh_field_name)=struct;
+                all_simple_rois.(iter_field_name).(thresh_field_name)=new_shrink_ROI;
+            end
         end
     end
-    
-    %expand
-    for expand_thresh=good_expand_thresholds
-        expand_roi=new_expand_roi;
+end
+
+%expand
+for expand_thresh=good_expand_thresholds
+    thresh_field_name=strcat(strcat("thresh_",num2str(expand_thresh)));
+    thresh_field_name=strrep(thresh_field_name,'.','');
+    thresh_field_name=char(thresh_field_name);
+    for i=1:nIter
+        iter_field_name=strcat(strcat("expand_",num2str(i)),"_iter");
+        iter_field_name=char(iter_field_name);
+        
+        if i>1
+        previous_iter_field_name=strcat(strcat("expand_",num2str(i-1)),"_iter");
+        previous_iter_field_name=char(previous_iter_field_name);
+                expand_roi=all_simple_rois.(previous_iter_field_name).(thresh_field_name);
+        else
+           expand_roi=roi; 
+        end
+            new_expand_roi=convn(expand_roi,mask,'same');
         cvThresh=expand_thresh*maxCv;
-        expand_roi(expand_roi<=cvThresh)=0;
+        new_expand_roi(expand_roi<=cvThresh)=0;
         expand_roi(expand_roi>0)=1;
         try
-            expand_all_ROIs(end+1)=struct('thresh',expand_thresh,'roi',expand_roi);
+            all_simple_rois.(iter_field_name).(thresh_field_name)=new_expand_roi;
         catch
-            expand_all_ROIs=struct('thresh',expand_thresh,'roi',expand_roi);
+            try
+                all_simple_rois.(iter_field_name).(thresh_field_name)=struct;
+                all_simple_rois.(iter_field_name).(thresh_field_name)=new_expand_roi;
+            catch
+                all_simple_rois=struct;
+                all_simple_rois.(iter_field_name).(thresh_field_name)=struct;
+                all_simple_rois.(iter_field_name).(thresh_field_name)=new_expand_roi;
+            end
         end
-    end
-    
-    if i==1
-        all_simple_rois.rois_one_iter=cat(1,shrink_all_ROIs,expand_all_ROIs);
-    end
-    
-    if i==3
-        all_simple_rois.rois_tree_iter=cat(4,shrink_all_ROIs,expand_all_ROIs);
-    end
-    
-    if i==5
-        all_simple_rois.rois_five_iter=cat(4,shrink_all_ROIs,expand_all_ROIs);
     end
 end
 end

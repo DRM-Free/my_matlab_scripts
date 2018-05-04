@@ -43,9 +43,7 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
             volObj.spatialRef = vol.spatialRef;
             roi=roi.data;
             vol=vol.data;
-            
-            for i=1:10
-                nIter=iterationsCounts(i);
+%Gen ROI simple method (fast)
                 %For expansion :
                 %false, >0.6 is not good (ROI becomes 0)
                 %false, >0.3 is not effective for actual expansion
@@ -71,9 +69,10 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
 %                 newROI=genROIs_simple(roi,5,0.2,5,true); %Unexpected result
 
 
-%Change ROI other method
+%Gen ROI other method
                 %newROI=genROIs_tier2(roi,vol,nIter,true); %Last argument is for enabling better region choice
-
+            for i=1:10
+                nIter=iterationsCounts(i);
                 %Applying new data to roiObj
                 roiObj.data=newROI;
                 save('roi','roi');
