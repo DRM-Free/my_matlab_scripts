@@ -1,21 +1,23 @@
-function [all_simple_rois]= genROIs_simple(roi,range,nIter)
+function [all_simple_rois,shrink_thresholds,expand_thresholds]= genROIs_simple(roiObj,world_extent,range,nIter)
 %range is the size of the area to be considered around each point for growth or shrink.
 %threshold represents how easy it will be to grow or shrink. 0 will always
 %grow, 1 will always shrink
+roiObj_regular=interpVolume(roiObj,[1,1,1],'linear',0.5,'roi');
+roi=roiObj_regular.data;
 
 %Those thersholds were chosen for a range of 5
 % good_shrink_thresholds=[0.3,0.35,0.4,0.45,0.5]; %>0.5 can give unexpected behaviour, sometimes overshrink and matrix becomes 0
-good_shrink_thresholds=[0.3,0.325,0.35,0.4,0.42,0.45]; %>0.5 can give unexpected behaviour, sometimes overshrink and matrix becomes 0
+shrink_thresholds=[0.3,0.35,0.4,0.45,0.5]; %>0.5 can give unexpected behaviour, sometimes overshrink and matrix becomes 0
 %<0.3 for shrink actually becomes an expand
 % good_expand_thresholds=[0.05,0.1,0.15,0.2,0.25]; %>0.3 is actually a shrink
-good_expand_thresholds=[0.3,0.275,0.25,0.2,0.18,0.16]; %>0.3 is actually a shrink
+expand_thresholds=[0.3,0.25,0.2,0.15,0.1]; %>0.3 is actually a shrink
 mask=genMask(range);
 maxCv=numel(mask);
 shrink_ROI=roi;
 expand_roi=roi;
 
 % shrink
-for shrink_thresh=good_shrink_thresholds
+for shrink_thresh=shrink_thresholds
     thresh_field_name=strcat(strcat("thresh_",num2str(shrink_thresh)));
     thresh_field_name=strrep(thresh_field_name,'.','');
     thresh_field_name=char(thresh_field_name);
@@ -35,6 +37,11 @@ for shrink_thresh=good_shrink_thresholds
         new_shrink_ROI(new_shrink_ROI>=cvThresh)=-1;
         new_shrink_ROI(new_shrink_ROI>0)=0;
         new_shrink_ROI(new_shrink_ROI==-1)=1;
+        
+        roiObj_regular.data=new_shrink_ROI;
+        roiObj_final=interpVolume(roiObj,[world_extent(1),world_extent(2),world_extent(3)],'linear',0.5,'roi');
+        new_shrink_ROI=roiObj_final.data;
+        
         try
             all_simple_rois.(iter_field_name).(thresh_field_name)=new_shrink_ROI;
         catch
@@ -51,7 +58,7 @@ for shrink_thresh=good_shrink_thresholds
 end
 
 %expand
-for expand_thresh=good_expand_thresholds
+for expand_thresh=expand_thresholds
     thresh_field_name=strcat(strcat("thresh_",num2str(expand_thresh)));
     thresh_field_name=strrep(thresh_field_name,'.','');
     thresh_field_name=char(thresh_field_name);
@@ -70,6 +77,11 @@ for expand_thresh=good_expand_thresholds
         cvThresh=expand_thresh*maxCv;
         new_expand_roi(new_expand_roi<=cvThresh)=0;
         new_expand_roi(new_expand_roi>0)=1;
+        
+        roiObj_regular.data=new_expand_roi;
+        roiObj_final=interpVolume(roiObj,[world_extent(1),world_extent(2),world_extent(3)],'linear',0.5,'roi');
+        new_expand_roi=roiObj_final.data;
+        
         try
             all_simple_rois.(iter_field_name).(thresh_field_name)=new_expand_roi;
         catch
