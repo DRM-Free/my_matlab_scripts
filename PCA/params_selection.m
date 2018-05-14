@@ -9,16 +9,17 @@ for texture_type=texture_types
     params_sets=params_sets.';
     texture_features_names=fieldnames(type.(params_sets{1})).';
     for texture_features_name=texture_features_names
-            values=[];
-            params={};
-            kept_params=[];
+        values=[];
+        params={};
+        kept_params=[];
         for params_set=params_sets
             values(end+1)=type.(params_set{1}).(texture_features_name{1});
             params(end+1)=params_set; %Just saving params in the same orders as values
             dev=std(values);
             cv=conv(sort(values),[1 -1],'same');
-            kept_params=cv>dev/25; %With this config there will be at most 25 kept params
+            kept_params=cv>dev/8; %This will influence the number of kept params.
             kept_params(end)=1; %Always keep last param as it is an extremum regardless and it will never be kept with the previous line
+            kept_params(1)=1;
         end
         kept_entries.(texture_type{1}).(texture_features_name{1})=struct('values',values,'params',{params},'kept_params',kept_params);
     end
