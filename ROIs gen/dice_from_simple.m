@@ -10,10 +10,13 @@ for it=1:nIter
         thresh_field_name=strrep(thresh_field_name,'.','');
         thresh_field_name=char(thresh_field_name);
         
-        compROI=all_simple_rois.(iter_field_name).(thresh_field_name).full_scale;
-
+        compROI=all_simple_rois.(iter_field_name).(thresh_field_name).original_scale;
+        
         %Processing dice coefficient
-        dice=dice_coeff_from_vol(roi,compROI);
+        try
+            dice=dice_coeff_from_vol(roi,compROI);
+        catch
+        end
         dice_coeffs(end+1)=dice;
         
         %Selecting a variety of range of ROIs (with different dice values)
@@ -40,9 +43,11 @@ for it=1:nIter
         thresh_field_name=strrep(thresh_field_name,'.','');
         thresh_field_name=char(thresh_field_name);
         
-                compROI=all_simple_rois.(iter_field_name).(thresh_field_name).full_scale;
-
-        dice=dice_coeff_from_vol(roi,compROI);
+        compROI=all_simple_rois.(iter_field_name).(thresh_field_name).original_scale;
+        try
+            dice=dice_coeff_from_vol(roi,compROI);
+        catch
+        end
         dice_coeffs(end+1)=dice;
         for i=0.9:-0.1:0.5
             if (mod(dice,i)<0.1 && dice~=1)

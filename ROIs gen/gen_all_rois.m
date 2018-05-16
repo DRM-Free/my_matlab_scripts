@@ -43,7 +43,8 @@ for dataPath=dataPaths %For one data file featuring all rois for one patient and
             % In genROIs_simple, see the thresholds params to generate ROIs with different
             % levels of similarity
             
-            [newROIs,refROI,shrink_thresholds,expand_thresholds]=genROIs_simple(roiObj,world_extent,range,nIter);
+            [newROIs,shrink_thresholds,expand_thresholds]=genROIs_simple(roiObj,world_extent,range,nIter);
+            refROI=roiObj.data;
             %Now let's keep only the desired ROIs with proper dice
             %coefficients. The number that is kept is configurable
             %THIS STEP IS SLOW

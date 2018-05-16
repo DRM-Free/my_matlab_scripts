@@ -1,9 +1,10 @@
-function [all_simple_rois,refROI,shrink_thresholds,expand_thresholds]= genROIs_simple(roiObj,world_extent,range,nIter)
+function [all_simple_rois,shrink_thresholds,expand_thresholds]= genROIs_simple(roiObj,world_extent,range,nIter)
 %range is the size of the area to be considered around each point for growth or shrink.
 %threshold represents how easy it will be to grow or shrink. 0 will always
 %grow, 1 will always shrink
+refROI=roiObj.data;
 roiObj_regular=interpVolume(roiObj,[1,1,1],'linear',0.5,'roi');
-refROI=roiObj_regular.data;
+refROI_normalized_ref=roiObj_regular.data;
 %Those thersholds were chosen for a range of 5
 % good_shrink_thresholds=[0.3,0.35,0.4,0.45,0.5]; %>0.5 can give unexpected behaviour, sometimes overshrink and matrix becomes 0
 shrink_thresholds=[0.3,0.35,0.4,0.45,0.5]; %>0.5 can give unexpected behaviour, sometimes overshrink and matrix becomes 0
@@ -27,7 +28,7 @@ for shrink_thresh=shrink_thresholds
             previous_iter_field_name=char(previous_iter_field_name);
             shrink_ROI=all_simple_rois.(previous_iter_field_name).(thresh_field_name).full_scale; %reduced version of ROI was saved so this can't work
         else
-            shrink_ROI=refROI;
+            shrink_ROI=refROI_normalized_ref;
         end
         new_shrink_ROI=convn(shrink_ROI,mask,'same');
         cvThresh=shrink_thresh*maxCv;
@@ -38,6 +39,9 @@ for shrink_thresh=shrink_thresholds
         roiObj_regular.data=new_shrink_ROI;
         roiObj_final=interpVolume(roiObj_regular,[world_extent(1),world_extent(2),world_extent(3)],'linear',0.5,'roi');
         original_scale_shrink_ROI=roiObj_final.data;
+        
+        %Here an approximation is made in order to keep original ROI size !
+        original_scale_shrink_ROI=original_scale_shrink_ROI(1:size(refROI,1),1:size(refROI,2),1:size(refROI,3));
         
         try
             all_simple_rois.(iter_field_name).(thresh_field_name)=struct('original_scale',original_scale_shrink_ROI,'full_scale',new_shrink_ROI);
@@ -68,7 +72,7 @@ for expand_thresh=expand_thresholds
             previous_iter_field_name=char(previous_iter_field_name);
             expand_roi=all_simple_rois.(previous_iter_field_name).(thresh_field_name).full_scale;
         else
-            expand_roi=refROI;
+            expand_roi=refROI_normalized_ref;
         end
         new_expand_roi=convn(expand_roi,mask,'same');
         cvThresh=expand_thresh*maxCv;
@@ -78,6 +82,9 @@ for expand_thresh=expand_thresholds
         roiObj_regular.data=new_expand_roi;
         roiObj_final=interpVolume(roiObj_regular,[world_extent(1),world_extent(2),world_extent(3)],'linear',0.5,'roi');
         original_scale_expand_roi=roiObj_final.data;
+        
+        %Here an approximation is made in order to keep original ROI size !
+        original_scale_expand_roi=original_scale_expand_roi(1:size(refROI,1),1:size(refROI,2),1:size(refROI,3));
         
         try
             all_simple_rois.(iter_field_name).(thresh_field_name)=struct('original_scale',original_scale_expand_roi,'full_scale',new_expand_roi);
