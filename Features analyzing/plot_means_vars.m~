@@ -1,0 +1,7 @@
+function plot_means_vars(features_mean,features_mean_original,features_var,features_var_original,feature)
+original_mean=get_inclusive_field(features_mean_original.FEATURES,feature);
+original_var=get_inclusive_field(features_var_original.FEATURES,feature);
+new_mean_values=[];
+new_var_values=[];
+
+end

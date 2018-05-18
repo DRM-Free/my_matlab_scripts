@@ -1,72 +1,54 @@
-function original_rois_features=organize_rois_features()
-file_nametag='Lung-Multidelineation-05_CT';
-all_features_files=dir('FEATURES/*.mat');
-all_features_files=all_features_files.';
-chosen_features_files={};
-%Select the desired features files to be eftracted
-for feature_file=all_features_files
-    name=feature_file.name;
-    if contains(name,file_nametag)
-        chosen_features_files(end+1)={name};
-    end
+function organized_rois_features=organize_rois_features()
+original=false; %Set to false to retrieve from original rois, true otherwise
+if original
+    %%If retrieving original rois features, use following nametag and features folder
+    file_nametag='Lung-Multidelineation-05_CT'; %This is for partial original rois retrieval. If all shall be retrieved, set to ''
+    container_folders=struct('name','FEATURES','folder','.');
+else
+    file_nametag=''; %Files for new rois are already organized in proper folders and no tag is necesarry for retrieval
+    container_folders=dir('features_rois_simple/Lung*');
+    container_folders=container_folders.';
 end
-clear name feature_file all_features_files file_nametag
 
-%Get all features names
-load(strcat('FEATURES/',chosen_features_files{1}));
-concatenated_field_names=fieldnamesr(radiomics.image);
-separated_features_names=separate_field_names(concatenated_field_names);
-clear radiomics;
+organized_rois_features=struct;
 
-% %Initialize features proper container
-% original_rois_features
-
-for chosen_features_file=chosen_features_files
-    load(strcat('FEATURES/',chosen_features_file{1}));
-    for features_name=1:length(separated_features_names)
-        separated_name=separated_features_names{features_name};
-        feature_value=radiomics.image.(separated_name{1});
+for container_folder=container_folders %This loop is only meant for new rois. Keep only inner for loop if retrieving from original rois
+    if ~original
+        % %Initialize features proper container
+        features_folders=strcat(container_folder.folder,'/',container_folder.name,'/GTV*');
+        features_folders=dir(features_folders);
+        features_folders=features_folders.';
+    else
+        features_folders=container_folders;
+    end
+    
+    %container folder name is not a valid field, let us modify it a bit
+    container_folder_name=strsplit(container_folder.name,'.');
+    container_folder_name=container_folder_name{1};
+    container_folder_name=strrep(container_folder_name,'-','');
+    
+    %Iterate over folders to append all associated features
+    for features_folder=features_folders
+        feature_folder_name=strrep(features_folder.name,'(',''); %Field names must not contain - ( )
+        feature_folder_name=strrep(feature_folder_name,')','');
+        feature_folder_name=strrep(feature_folder_name,'-','_');
+        feature_folder_name=strrep(feature_folder_name,' ','_');
         
-        %Now get all the way down the sub structures to the sought feature
-        %value
-        field_pos=2;
-        while isstruct(feature_value)
-            feature_value=feature_value.(separated_name{field_pos});
-            field_pos=field_pos+1;
+        if ~isfield(organized_rois_features,container_folder_name)
+            organized_rois_features.(container_folder_name)=struct;
         end
         
-        complete_name=concatenated_field_names{features_name};
-        new_field_name=strrep(concatenated_field_names{features_name},'.','__');
-        feature_type=separated_name{1};
-        new_field_name=strrep(new_field_name,feature_type,'');
+        if ~original
+            if ~isfield(organized_rois_features.(container_folder_name),(feature_folder_name))
+                organized_rois_features.(container_folder_name).(feature_folder_name)=struct;
+            end
+        end
         
-        if contains(complete_name,'texture') %This si a texture feature so we need to sort by param set
-            texture=true;
-            param_set=separated_name{3};
+        if original
+            organized_rois_features.(container_folder_name)=append_features(organized_rois_features.(container_folder_name),features_folder,file_nametag);
         else
-            texture=false;
-        end
-        
-        new_field_name=new_field_name(3:end);
-        
-        try
-            if ~texture
-                original_rois_features.(feature_type).(new_field_name)(end+1)=feature_value;
-            else
-                new_field_name=strrep(new_field_name,param_set,'');
-                new_field_name=strrep(new_field_name,'____','__');
-                original_rois_features.(feature_type).(new_field_name).(param_set)(end+1)=feature_value;
-            end
-        catch
-            if ~texture
-                original_rois_features.(feature_type).(new_field_name)=feature_value;
-            else
-                new_field_name=strrep(new_field_name,param_set,'');
-                new_field_name=strrep(new_field_name,'____','__');
-                original_rois_features.(feature_type).(new_field_name).(param_set)=feature_value;
-            end
+            organized_rois_features.(container_folder_name).(feature_folder_name)=append_features(organized_rois_features.(container_folder_name).(feature_folder_name),features_folder,file_nametag);
         end
     end
 end
-
 end
