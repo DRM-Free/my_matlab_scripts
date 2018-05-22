@@ -11,7 +11,7 @@ for feature_file=all_features_files
         chosen_features_files(end+1)={name};
     end
 end
-clear name feature_file all_features_files file_nametag
+clear name feature_file all_features_files
 
 %Get all features names
 load(strcat(features_folder.folder,'/',features_folder.name,'/',chosen_features_files{1}));
@@ -51,6 +51,13 @@ for chosen_features_file=chosen_features_files
             else
                 new_field_name=strrep(new_field_name,param_set,'');
                 new_field_name=strrep(new_field_name,'____','__');
+                %The following line is just a patch to cover differences
+                %between original rois and new rois radiomics structure
+                %names
+                if ~isequal(file_nametag,'')
+                param_set=strrep(param_set,'equal','equal64');
+                end
+                
                 rois_features.(feature_type).(new_field_name).(param_set)(end+1)=feature_value;
             end
         catch
