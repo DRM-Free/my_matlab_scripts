@@ -10,7 +10,7 @@ for base_roi=base_rois
     new_var_values(end+1)=get_inclusive_field(features_var,strcat(base_roi{1},'.',feature));
 end
 
-mean_relative_variation=sort((new_mean_values-original_mean)/original_mean);
-var_relative_variation=sort((new_var_values-original_var)/original_var);
+mean_relative_variation=(new_mean_values-original_mean)/original_mean;
+var_relative_variation=(new_var_values-original_var)/original_var;
 
 end

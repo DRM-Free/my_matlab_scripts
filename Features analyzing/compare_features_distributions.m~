@@ -1,0 +1,44 @@
+function [all_test_results]=compare_features_distributions(new_rois_features,original_rois_features)
+all_features=fieldnamesr(original_rois_features.FEATURES);
+all_features=all_features.';
+original_rois=fieldnames(new_rois_features.LungMultidelineation05_CT);
+original_rois=original_rois.';
+all_test_results=struct('mean_scores',[],'var_scores',[]);
+features_count=numel(all_features);
+processed_features=0;
+for feature_name=all_features
+    feature_name=feature_name{1};
+    mean_score=0;
+    var_score=0;
+    try
+        all_test_results.features(end+1)={feature_name};
+    catch
+        all_test_results.features={feature_name};
+    end
+    
+    for original_roi=original_rois
+        original_roi=original_roi{1};
+        original_distrib=get_inclusive_field(original_rois_features.FEATURES,feature_name);
+        new_distrib=get_inclusive_field(new_rois_features.LungMultidelineation05_CT.(original_roi),feature_name);
+        if ~isequal(original_distrib,[])
+            
+            %Compare variances with Fisher test (Two-sample F-test)
+            [h_var,p_var] = vartest2(original_distrib,new_distrib);
+            
+            %Compare mean with two-sided Wilcoxon rank sum test
+            [p_mean,h_mean,~] = ranksum(original_distrib,new_distrib);
+            
+            mean_score=mean_score+h_mean;
+            var_score=var_score+h_var;
+            
+        end
+    end
+    all_test_results.mean_scores(end+1)=mean_score;
+    all_test_results.var_scores(end+1)=var_score;
+    if isnan(var_score)
+    end
+    processed_features=processed_features+1;
+    %     fprintf('%i of %i features were processed\n',processed_features,features_count);
+end
+
+end
