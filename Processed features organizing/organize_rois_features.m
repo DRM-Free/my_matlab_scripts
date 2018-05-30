@@ -1,5 +1,5 @@
 function organized_rois_features=organize_rois_features()
-original=true; %Set to false to retrieve from original rois, true otherwise
+original=false; %Set to true to retrieve from original rois, false otherwise
 if original
     %%If retrieving original rois features, use following nametag and features folder
     file_nametag='Lung-Multidelineation-05_CT'; %This is for partial original rois retrieval. If all shall be retrieved, set to ''
@@ -11,7 +11,8 @@ else
 end
 
 organized_rois_features=struct;
-
+chosen_features_files={};
+processed_folders=0;
 for container_folder=container_folders
     if ~original
         %Initialize features proper container
@@ -44,11 +45,20 @@ for container_folder=container_folders
             end
         end
         
+        %Here, chosen_features_files is the list of roi names. It is processed only
+        %once and then the same order is kept for adding new features values to
+        %resulting lists. Therefore the first name in
+        %organized_rois_features.ordered_roi_names corresponds to the first feature
+        %value in each features lists.
+        
         if original
-            organized_rois_features.(container_folder_name)=append_features(organized_rois_features.(container_folder_name),features_folder,file_nametag);
+            [organized_rois_features.(container_folder_name),chosen_features_files]=append_features(organized_rois_features.(container_folder_name),features_folder,file_nametag,chosen_features_files);
         else
-            organized_rois_features.(container_folder_name).(feature_folder_name)=append_features(organized_rois_features.(container_folder_name).(feature_folder_name),features_folder,file_nametag);
+            [organized_rois_features.(container_folder_name).(feature_folder_name),chosen_features_files]=append_features(organized_rois_features.(container_folder_name).(feature_folder_name),features_folder,file_nametag,chosen_features_files);
         end
+        organized_rois_features.ordered_roi_names=chosen_features_files;
     end
+    processed_folders=processed_folders+1;
+    fprintf('%i out of %i data folders were processed\n',processed_folders,numel(container_folders));
 end
 end

@@ -19,7 +19,6 @@ features_morph=features(morph_indices);
 
 
 % Sort stat features according to mean score
-
 [mean_scores_stat_sorted, mean_scores_stat_order] = sort(mean_scores_stat);
 var_scores_stat_sorted=var_scores_stat(mean_scores_stat_order);
 
@@ -45,7 +44,7 @@ for mean_index=good_mean_morph
         kept_morph(end+1)=mean_index;
     end
 end
-kept_morph=
+kept_morph=features_morph(kept_morph);
 
 kept_stat=[];
 for mean_index=good_mean_stats
@@ -53,6 +52,8 @@ for mean_index=good_mean_stats
         kept_stat(end+1)=mean_index;
     end
 end
+kept_stat=features_stat(kept_stat);
+
 
 figure('Name','Statistics features classification scores')
 p_stat=plot(mean_scores_stat_sorted/max_m_stat), hold on, p_stat(2)=plot(var_scores_stat_sorted/max_v_stat);

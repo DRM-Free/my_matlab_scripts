@@ -19,7 +19,6 @@ features_morph=features(morph_indices);
 
 
 % Sort stat features according to mean score
-
 [mean_scores_stat_sorted, mean_scores_stat_order] = sort(mean_scores_stat);
 var_scores_stat_sorted=var_scores_stat(mean_scores_stat_order);
 
