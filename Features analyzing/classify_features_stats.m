@@ -32,7 +32,7 @@ max_m_morph=max(mean_scores_morph_sorted);
 max_v_stat=max(var_scores_stat_sorted);
 max_v_morph=max(var_scores_morph_sorted);
 
-%The indices were previously reverted from x to 1-x so good features have
+%The indices were previously reverted from x to 1-x so well reproduced features have
 %high indices
 good_mean_morph=find(mean_scores_morph>0.5);
 good_mean_stats=find(mean_scores_stat>0.5);
@@ -56,7 +56,7 @@ kept_stat=features_stat(kept_stat);
 
 
 figure('Name','Statistics features classification scores')
-p_stat=plot(mean_scores_stat_sorted/max_m_stat), hold on, p_stat(2)=plot(var_scores_stat_sorted/max_v_stat);
+p_stat=plot(mean_scores_stat_sorted), hold on, p_stat(2)=plot(var_scores_stat_sorted);
 
 p_stat(1).Color='Blue';
 p_stat(1).LineWidth=2;
@@ -64,7 +64,7 @@ p_stat(2).Color='Yellow';
 p_stat(2).LineWidth=2;
 
 figure('Name','Morphological features classification scores')
-p_morph=plot(mean_scores_morph_sorted/max_m_morph), hold on, p_morph(2)=plot(var_scores_morph_sorted/max_v_morph);
+p_morph=plot(mean_scores_morph_sorted), hold on, p_morph(2)=plot(var_scores_morph_sorted);
 
 
 p_morph(1).Color='Blue';

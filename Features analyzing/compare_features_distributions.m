@@ -51,11 +51,11 @@ for feature_name=all_features
         end
     end
     
-    %Now we reverse the scores, in order to have a high score corresponding
+    %Now apending test results. Remember that low scores correspond
     %to a high level of similarity between original and new
     %variances/medians
-    all_test_results.mean_scores(end+1)=1-mean(mean_scores);
-    all_test_results.var_scores(end+1)=1-mean(var_scores);
+    all_test_results.mean_scores(end+1)=mean(mean_scores);
+    all_test_results.var_scores(end+1)=mean(var_scores);
     
     processed_features=processed_features+1;
     fprintf('%i of %i features were processed\n',processed_features,features_count);

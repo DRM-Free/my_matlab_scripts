@@ -60,7 +60,7 @@ end
 
 %expand
 for expand_thresh_number=1:numel(expand_thresholds)
-    thresh_field_name=strcat(strcat("thresh_",num2str(expand_thresholds(expand_thresh_number))));
+    thresh_field_name=strcat(strcat("thresh_",num2str(expand_thresh_number)));
     thresh_field_name=strrep(thresh_field_name,'.','');
     thresh_field_name=char(thresh_field_name);
     for i=1:nIter
@@ -75,7 +75,7 @@ for expand_thresh_number=1:numel(expand_thresholds)
             expand_roi=refROI_normalized_ref;
         end
         new_expand_roi=convn(expand_roi,mask,'same');
-        cvThresh=expand_thresholds(expand_thresh_number)*maxCv;
+        cvThresh=expand_thresh_number*maxCv;
         new_expand_roi(new_expand_roi<=cvThresh)=0;
         new_expand_roi(new_expand_roi>0)=1;
         
