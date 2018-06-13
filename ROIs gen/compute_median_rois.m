@@ -1,57 +1,66 @@
 function compute_median_rois()
-all_data=dir('DATA/*.mat');
+all_data=dir('Simplified_data/*.mat');
 all_data=all_data.';
+
+%Remove all_data elements that have already been processed (for testing only)
+already_processed_labels={'PET'};
+% already_processed_labels=[];
+%11_PET keeps throwing warnings. Are those ROIs too small ?
+already_processed=zeros(1,numel(all_data));
+
+for processed_number=1:numel(already_processed_labels)
+    new_processed=arrayfun(@(x) contains(x.name,already_processed_labels{processed_number}),all_data);
+    already_processed=already_processed|new_processed;
+end
+all_data(already_processed==1)=[];
+
+
 for data=all_data
     fprintf('Processing data file %s\n',data.name);
-    load(strcat('DATA/',data.name));
-    world_extent=[sData{1,2}.scan.volume.spatialRef.PixelExtentInWorldX,sData{1,2}.scan.volume.spatialRef.PixelExtentInWorldY,sData{1, 2}.scan.volume.spatialRef.PixelExtentInWorldZ];
-    rois_one_patient=sData{1, 2}.scan.contour;
-    kept_rois=[];
-    for roi_number=1:numel(rois_one_patient)
-        roi_name=rois_one_patient(roi_number).name;
-        visPos = strfind(roi_name,'1vis');
-        autoPos = strfind(roi_name,'1auto');
-        if ~(isequal(autoPos,[])&isequal(visPos,[]))
-            kept_rois(end+1)=roi_number;
+    %Loading ROIs (which are already in the same referential, but still in a reduced form, thus we need to reconstruct full matrix)
+    load(strcat('Simplified_data/',data.name,'/ROIs.mat'));
+    load(strcat('Simplified_data/',data.name,'/spatial_ref.mat'));
+    all_rois=zeros([new_spatial_ref.ImageSize(1),new_spatial_ref.ImageSize(2),new_spatial_ref.ImageSize(3),numel(all_rois_compressed)]);;
+    all_rois=uint8(all_rois);
+    for roi_index=1:numel(all_rois_compressed)
+        [non_zero_x,non_zero_y,non_zero_z]=ind2sub(new_spatial_ref.ImageSize,all_rois_compressed{roi_index});
+        for index=1:numel(non_zero_x)
+            all_rois(non_zero_x(index),non_zero_y(index),non_zero_z(index),roi_index)=1;
         end
     end
     
-    all_roiObj=[];
-    for kept_roi=kept_rois
-        [~,roiObj] = getROI(sData,kept_roi,'2box');
-        try
-            all_roiObj=cat(4,all_roiObj,roiObj.data);
-        catch
-            all_roiObj=roiObj.data;
-        end
-    end
-    majority_roi=zeros(size(all_roiObj(:,:,:,1)));
+    majority_roi=zeros(size(all_rois(:,:,:,1)));
     %Let's take a majority vote for median ROI computation (in case of perfect split, keep
     %current voxel in resulting ROI)
     for x=1:size(majority_roi,1)
         for y=1:size(majority_roi,2)
             for z=1:size(majority_roi,3)
-                if mean(all_roiObj(x,y,z,:))>=size(all_roiObj,4)/2
+                if mean(all_rois(x,y,z,:))>=0.5
                     majority_roi(x,y,z)=1;
                 end
             end
         end
     end
     
-    majority_roiObj=roiObj;
-    majority_roiObj.data=majority_roi;
-    
+    majority_roiObj=struct('spatialRef',new_spatial_ref,'data',majority_roi);
     
     %Simple ROI gen parameters
     range=5;
     nIter=10;
+    world_extent=[new_spatial_ref.PixelExtentInWorldX,new_spatial_ref.PixelExtentInWorldY,new_spatial_ref.PixelExtentInWorldZ];
     %Now compute new ROIs from majority ROI
     [newROIs,shrink_thresholds,expand_thresholds]=genROIs_simple(majority_roiObj,world_extent,range,nIter);
     [~,kept_ROIs]=dice_from_simple(newROIs,majority_roi,shrink_thresholds,expand_thresholds,nIter);
-    %create proper data structure
-    roi_struct=struct('majority',majority_roi,'new_rois',kept_ROIs)
-    %Saving results on drive
-    save_name=strcat('Data(median ROI)/',data.name);
-    save(save_name,'roi_struct');
+    
+    %Saving new ROIs and majority ROIs as an array of non-zero indexes
+    majority_roi=find(majority_roi);
+    if ~isdir(strcat('Simplified_data/',data.name,'/New_ROIs'))
+        mkdir(strcat('Simplified_data/',data.name,'/New_ROIs'));
+    end
+    
+    save_name=strcat('Simplified_data/',data.name,'/New_ROIs');
+    save(strcat(save_name,'/Majority'),'majority_roi');
+    save(strcat(save_name,'/New_from_majority'),'kept_ROIs');
+    
 end
 end
