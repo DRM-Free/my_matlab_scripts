@@ -1,20 +1,33 @@
 all_features_folders=dir('features_from_majority/*.mat');
+all_features_files=dir(strcat('features_from_majority/',all_features_folders(1).name,'/*.mat'));
 load(strcat('features_from_majority/',all_features_folders(1).name,'/',all_features_files(1).name));
 all_features=fieldnamesr(radiomics.image);
 clear radiomics
 
-
+if ~isdir('features_from_majority_sorted_by_volume')
+    mkdir('features_from_majority_sorted_by_volume');
+end
 
 for features_folder_index=1:numel(all_features_folders)
     all_features_files=dir(strcat('features_from_majority/',all_features_folders(features_folder_index).name,'/*.mat'));
     %all_features_file contains the names of all ROIs types (majority, expands and schinks)
-    
-    %We need to order features folders from the smallest ROi to the biggest
+    if ~isdir(strcat('features_from_majority_sorted_by_volume/',all_features_folders(features_folder_index).name))
+        mkdir(strcat('features_from_majority_sorted_by_volume/',all_features_folders(features_folder_index).name));
+    end
+    unsorted_volumes=[];
+    for feature_file_index=1:numel(all_features_files)
+        load(strcat('features_from_majority/',all_features_folders(features_folder_index).name,'/',all_features_files(feature_file_index).name));
+        cur_vol=radiomics.image.morph_3D.scale2.Fmorph_vol;
+        unsorted_volumes(end+1)=cur_vol;
+    end
+    [sorted_volumes,sorted_indexes]=sort(unsorted_volumes);
+    %We need to order features folders from the smallest ROI to the biggest
     %one in order to find a possible rupture ROI
     shrink_values=[];
     expand_values=[];
-    for feature_file=1:numel(all_features_files)
-        separated_name=strsplit(all_features_files(feature_file).name,'_');
+    for feature_file_index=1:numel(all_features_files)
+        
+        separated_name=strsplit(all_features_files(feature_file_index).name,'_');
         transform_type=separated_name{1};
         
         if isequal(transform_type,'expand') %This file contains features from expanded ROI
@@ -42,7 +55,7 @@ for features_folder_index=1:numel(all_features_folders)
             inf_range_str=strrep(inf_range_str,'.','');
             sup_range_str=strrep(sup_range_str,'.','');
             file_name=strcat('shrink_dice_range_',inf_range_str,'_to_',sup_range_str);
-            load(strcat('features_from_majority/',all_features_folders(1).name,'/',file_name));
+            load(strcat('features_from_majority/',all_features_folders(features_folder_index).name,'/',file_name));
             cur_value=get_inclusive_field(radiomics.image,all_features{feature_index});
             if ~isequal(cur_value,[])
                 sorted_feature_values(end+1)=cur_value;
@@ -50,7 +63,7 @@ for features_folder_index=1:numel(all_features_folders)
             clear radiomics
         end
         
-        load(strcat('features_from_majority/',all_features_folders(1).name,'/majority.mat'));
+        load(strcat('features_from_majority/',all_features_folders(features_folder_index).name,'/majority.mat'));
         maj_value=get_inclusive_field(radiomics.image,all_features{feature_index});
         if ~isequal(maj_value,[])
             sorted_feature_values(end+1)=maj_value;
@@ -63,17 +76,50 @@ for features_folder_index=1:numel(all_features_folders)
             inf_range_str=strrep(inf_range_str,'.','');
             sup_range_str=strrep(sup_range_str,'.','');
             file_name=strcat('expand_dice_range_',inf_range_str,'_to_',sup_range_str);
-            load(strcat('features_from_majority/',all_features_folders(1).name,'/',file_name));
+            load(strcat('features_from_majority/',all_features_folders(features_folder_index).name,'/',file_name));
             cur_value=get_inclusive_field(radiomics.image,all_features{feature_index});
             if ~isequal(cur_value,[])
                 sorted_feature_values(end+1)=cur_value;
             end
             clear radiomics
         end
-        figure('name',all_features{feature_index});
-        plot(sorted_feature_values), hold on,
-        maj_plot=zeros(numel(sorted_feature_values));
+        
+        maj_plot=zeros(1,numel(sorted_feature_values));
         maj_plot=maj_plot+maj_value;
-        plot(maj_plot);
+        
+        feature_plot_name=strsplit(all_features{feature_index},'.');
+        feature_type=feature_plot_name{1};
+        ignore_feature=false;
+        if isequal(feature_type,'texture')
+            feature_name_complement=strcat(feature_plot_name{2},'__',feature_plot_name{3});
+            scale=strsplit(feature_name_complement,'scale');
+            scale=scale{2};
+            scale=scale(1);
+            if ~isequal(scale,'1')
+                ignore_feature=true;
+            end
+        else
+            feature_name_complement='';
+        end
+        if ~ignore_feature
+            feature_plot_name=feature_plot_name{end};
+            feature_plot_name=strrep(feature_plot_name,'_',' ');
+            figure('name',feature_plot_name,'visible','off');
+            %         p=plot(1:numel(maj_plot),maj_plot,1:numel(maj_plot),sorted_feature_values);
+            try
+                p=plot(sorted_volumes,sorted_feature_values);
+                title(strcat('Feature'," '",feature_plot_name,"'",' evolution'));
+                xlabel('ROI volume');
+                ylabel('Feature value');
+                
+                if ~isdir(strcat('features_from_majority_sorted_by_volume/',all_features_folders(features_folder_index).name,'/',feature_type,'/',feature_name_complement));
+                    mkdir(strcat('features_from_majority_sorted_by_volume/',all_features_folders(features_folder_index).name,'/',feature_type,'/',feature_name_complement));
+                end
+                saveas(p,strcat('features_from_majority_sorted_by_volume/',all_features_folders(features_folder_index).name,'/',feature_type,'/',feature_name_complement,'/',feature_plot_name,'.png'));
+            catch
+                %Unprocessed features such as moran will be caught here, just
+                %ignore it
+            end
+        end
     end
 end
