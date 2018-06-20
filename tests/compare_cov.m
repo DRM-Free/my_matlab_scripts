@@ -1,26 +1,17 @@
-function features_bland_altman_plot()
-if ~isdir('Bland_Altman_plot')
-    mkdir('Bland_Altman_plot');
-end
-
+function [cov_ratio_all,mean_ratio_all,all_features]=compare_cov
 all_features_folders=dir('features_from_original/*.mat');
 all_features_files_original=dir(strcat('features_from_original/',all_features_folders(1).name,'/*.mat'));
 load(strcat('features_from_original/',all_features_folders(1).name,'/',all_features_files_original(1).name));
 all_features=fieldnamesr(radiomics.image);
 clear radiomics
-skipped_features=4;
-patient_names={};
-for patient_index=1:numel(all_features_folders)
-    patient_name=all_features_folders(patient_index).name;
-    patient_name=strsplit(patient_name,'.');
-    patient_name=patient_name(1);
-    patient_names(patient_index)=patient_name;
-end
 ignored_patients=[];
-for feature_index=1+skipped_features:numel(all_features)
-    if ~isdir(strcat('features_from_majority_sorted_by_volume/',all_features_folders(feature_index).name))
-        mkdir(strcat('features_from_majority_sorted_by_volume/',all_features_folders(feature_index).name));
-    end
+skipped_features=2; %skipping volume and approx volume as they are constrained features
+ignored_features_indices=[];
+cov_ratio_all=[];
+mean_ratio_all=[];
+all_features=all_features(1+skipped_features:end); %keeping only the first 100 features
+for feature_index=1:numel(all_features)
+    
     sorted_original_features_all_patients=zeros(numel(all_features_folders),numel(all_features_files_original));
     interpolated_majority_features_all_patients=sorted_original_features_all_patients;
     for features_folder_index=1:numel(all_features_folders)
@@ -59,6 +50,7 @@ for feature_index=1+skipped_features:numel(all_features)
             end
         end
         if isequal(sorted_original_feature_values,[])
+            ignored_features_indices(end+1)=feature_index;
             continue %Ignore unprocessed features
         end
         
@@ -81,59 +73,38 @@ for feature_index=1+skipped_features:numel(all_features)
             sorted_original_features_all_patients(features_folder_index,:)=sorted_original_feature_values(:);
             interpolated_majority_features_all_patients(features_folder_index,:)=new_features_interp(:);
         catch
-            ignored_patients(end+1)=features_folder_index;
+           %This patient has a different number of given ROIs than others.
+           continue %Ignoring
         end
     end
     
-    %     new_features_interp_all=
-    %     original_features_all
-    
-    %p=plot((new_features_interp+sorted_original_feature_values)/2,new_features_interp-sorted_original_feature_values,'.k');
     feature_plot_name=strrep(all_features{feature_index},'_',' ');
-    feature_type=feature_plot_name{1};
-    ignore_feature=false;
+    feature_split_name=strsplit(feature_plot_name,'.');
+    feature_type=feature_split_name{1};
     if isequal(feature_type,'texture')
-        feature_name_complement=strcat(feature_plot_name{2},'__',feature_plot_name{3},'/');
+        feature_name_complement=strcat(feature_split_name{2},'__',feature_split_name{3},'/');
         scale=strsplit(feature_name_complement,'scale');
         scale=scale{2};
         scale=scale(1);
         if ~isequal(scale,'1')
-continue
+            ignored_features_indices(end+1)=feature_index;
+            continue
         end
-    else
-        feature_name_complement='';
     end
-    feature_split_name=strsplit(feature_plot_name,'.');
-    feature_name=feature_split_name{end};
-    ROI_Types={'Original ROI','New ROI'}
-    
-    % BA plot paramters
-    tit = feature_name; % figure title
-    gnames = {ROI_Types,patient_names}; % names of groups in data {dimension 1 and 2}
-    label = {'Original ROIs','New ROIs'}; % Names of data sets
-    corrinfo = {'n','SSE','r2','eq'}; % stats to display of correlation scatter plot
-    BAinfo = {'RPC(%)','ks'}; % stats to display on Bland-ALtman plot
-    limits = 'auto'; % how to set the axes limits
-    if 0 % colors for the data sets may be set as:
-        colors = 'br';      % character codes
-    else
-        colors = [0 0 1;... % or RGB triplets
-            1 0 0];
-    end
-    
-    % Generate figure with numbers of the data points (patients) and fixed
-    % Bland-Altman difference data axes limits
-    BlandAltman(sorted_original_features_all_patients, interpolated_majority_features_all_patients,label,[tit ' (numbers, forced 0 intercept, and fixed BA y-axis limits)'],gnames,'corrInfo',corrinfo,'baInfo',BAinfo,'axesLimits',limits,'colors',colors,'symbols','Num','baYLimMode','square','forceZeroIntercept','on','baStatsMode','Gaussian')
-    
-    figHandles = findobj('Type', 'figure');
-    set(figHandles(1), 'Position', [50, 50, 50, 50])
-    save_name=strcat('Bland_Altman_plot','/',all_features_folders(feature_index).name,'/',feature_type,'/',feature_name_complement,feature_plot_name,'.png');
-    saveas(figHandles(1),save_name);
-    % Repeat analysis using non-parametric analysis, no warning should appear.
-    % BAinfo = {'RPCnp','ks'};
-    % [cr, fig, statsStruct] = BlandAltman(sorted_original_features_all_patients, interpolated_majority_features_all_patients,label,[tit ' (using non-parametric stats)'],gnames,'corrInfo',corrinfo,'baInfo',BAinfo,'axesLimits',limits,'colors',colors,'baStatsMode','non-parametric');
-    
-    close all;
-    
+    %Process coefficient of variation
+    mean_new=mean(sorted_majority_feature_values);
+    mean_orig=mean(sorted_original_feature_values);
+    mean_ratio=mean_new/mean_orig;
+    cov_new=mean_new/std(sorted_majority_feature_values);
+    cov_orig=mean_orig/std(sorted_original_feature_values);
+    cov_ratio=cov_new/cov_orig;
+    cov_ratio_all(end+1)=cov_ratio;
+    mean_ratio_all(end+1)=mean_ratio;
 end
+
+all_features(ignored_features_indices)=[];
+% [kept_indices,narrowed_names_list]=narrow_by_feature_type(all_features,'morph')
+% cov_morph=cov_all(kept_indices);
+keep cov_ratio_all mean_ratio_all all_features
+save('COV workspace')
 end
