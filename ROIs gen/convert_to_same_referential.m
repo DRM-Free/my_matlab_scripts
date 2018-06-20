@@ -1,3 +1,17 @@
+%MIT License
+
+%Copyright (c) 2018 Anaël Leinert
+
+%Permission is hereby granted, free of charge, to any person obtaining a copy
+%of this software and associated documentation files (the "Software"), to deal
+%in the Software without restriction, including without limitation the rights
+%to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+%copies of the Software, and to permit persons to whom the Software is
+%furnished to do so, subject to the following conditions:
+
+%The above copyright notice and this permission notice shall be included in all
+%copies or substantial portions of the Software
+
 function [same_ref_rois,new_spatial_ref,new_image_size]=convert_to_same_referential(all_roi_obj)
 %This function takes various ROI obj and converts them to the same
 %referential, while returning the transformed volObj
