@@ -18,7 +18,7 @@
 %features are also dealt with (3 features concerned)
 % Redundant texture features are ignored (scale 2 or more)
 
-function [all_stats_all_features]=compare_cov
+function features_bland_altman2()
 %Getting full list of features names
 all_features_folders=dir('features_from_original/*.mat');
 all_features_files_original=dir(strcat('features_from_original/',all_features_folders(1).name,'/*.mat'));
@@ -26,6 +26,13 @@ load(strcat('features_from_original/',all_features_folders(1).name,'/',all_featu
 all_features=fieldnamesr(radiomics.image);
 clear radiomics
 
+patient_names={};
+for patient_index=1:numel(all_features_folders)
+    patient_name=all_features_folders(patient_index).name;
+    patient_name=strsplit(patient_name,'.');
+    patient_name=patient_name(1);
+    patient_names(patient_index)=patient_name;
+end
 
 ignored_lesions_indexes=[];
 skipped_features=0; %skipping volume and approx volume as they are constrained features
@@ -52,6 +59,8 @@ for feature_index=1:numel(all_features)
             ignored_features_indexes(end+1)=feature_index;
             continue
         end
+    else
+        feature_name_complement='';
     end
     
     if skip_feature_flag==1
@@ -129,57 +138,39 @@ for feature_index=1:numel(all_features)
     %Removing lines corresponding to ignored lesions
     sorted_original_feature_all_patients(ignored_lesions_indexes,:)=[];
     interpolated_majority_feature_all_patients(ignored_lesions_indexes,:)=[];
-    %Process lesion_wise variability for both original and new ROIs (one column = 1 same-related size ROI
-    %for all lesions ie all smallest ROIs altogether, except they are not the same volume)
-    lesion_wise_COVs_new=[];
-    lesion_wise_COVs_orig=[];
-    lesion_wise_means_new=[];
-    lesion_wise_means_orig=[];
-    for lesion_index_recap=1:size(sorted_original_feature_all_patients,1)
-        %Process coefficient of variation
-        %Note : One feature will not vary in certain circumstances ie stats
-        %min, so the cov will be Nan
-        [cov_new,mean_new]=coef_v(interpolated_majority_feature_all_patients(lesion_index_recap,:))
-        [cov_orig,mean_orig]=coef_v(sorted_original_feature_all_patients(lesion_index_recap,:))
-        lesion_wise_COVs_new(end+1)=cov_new;
-        lesion_wise_COVs_orig(end+1)=cov_orig;
-        lesion_wise_means_new(end+1)=mean_new;
-        lesion_wise_means_orig(end+1)=mean_orig;
+    
+     % BA plot paramters
+        ROI_Types={'Original ROI','New ROI'};
+        gnames = {ROI_Types,patient_names}; % names of groups in data {dimension 1 and 2}
+        label = {'Original ROIs','New ROIs'}; % Names of data sets
+        corrinfo = {'n','SSE','r2','eq'}; % stats to display of correlation scatter plot
+        BAinfo = {'RPC(%)','ks'}; % stats to display on Bland-ALtman plot
+        limits = 'auto'; % how to set the axes limits
+        if 0 % colors for the data sets may be set as:
+            colors = 'br';      % character codes
+        else
+            colors = [0 0 1;... % or RGB triplets
+                1 0 0];
+        end
+        try
+    feature_plot_name=strrep(all_features{feature_index},'_',' ');
+    feature_split_name=strsplit(feature_plot_name,'.');
+    feature_name=feature_split_name{end};
+            tit = feature_name; % figure title
+
+        % Generate figure with numbers of the data points (patients) and fixed
+        % Bland-Altman difference data axes limits
+        BlandAltman(sorted_original_feature_all_patients, interpolated_majority_feature_all_patients,label,[tit ' (numbers, forced 0 intercept, and fixed BA y-axis limits)'],gnames,'corrInfo',corrinfo,'baInfo',BAinfo,'axesLimits',limits,'colors',colors,'symbols','Num','baYLimMode','square','forceZeroIntercept','on','baStatsMode','Gaussian')
+                    figHandles = findobj('Type', 'figure');                
+                %                 p=plot(sorted_volumes,sorted_feature_values);
+                if ~isdir(strcat('Bland_Altman_plot/',feature_type,'/',feature_name_complement));
+                    mkdir(strcat('Bland_Altman_plot/',feature_type,'/',feature_name_complement));
+                end
+             saveas(figHandles(1),strcat('Bland_Altman_plot/',feature_type,'/',feature_name_complement,'/',feature_plot_name,'.png'));
+                close all
+        catch
+        fprintf('A feature stats failed to be processed : %s',all_features{feature_index});
     end
-    
-try
-    original_variability=struct();
-    new_variability=original_variability;
-    [original_variability.Lesion_wise_mean_variation,~]=coef_v(lesion_wise_means_orig);
-    original_variability.Lesion_wise_cov_mean=mean(lesion_wise_COVs_orig);
-    [original_variability.ROI_wise_mean_variation,~]=coef_v(lesion_wise_means_orig);
-    original_variability.ROI_wise_cov_mean=mean(lesion_wise_COVs_orig);
-    
-    %Lesion wise variabilities are processed on a special way, as
-    %processing the mean or cov of a column does not maks sense (Same ROIs indexes
-    %are not related with each other in any way)
-    new_variability.Lesion_wise_mean_variation=coef_v(lesion_wise_means_new);
-    new_variability.Lesion_wise_cov_mean=mean(lesion_wise_COVs_new);
-    new_variability.ROI_wise_mean_variation=coef_v(lesion_wise_means_new);
-    new_variability.ROI_wise_cov_mean=mean(lesion_wise_COVs_new);
-    %Process ROI_wise variability for both original and new ROIs (one column = all ROIs
-    %for 1 lesion)
-    
-    if ~isequal(exist('all_stats_all_features'),1)
-        all_stats_all_features=struct('new_variability',new_variability);
-        all_stats_all_features.original_variability=original_variability;
-        all_stats_all_features.feature_name={all_features(feature_index)};
-    else
-        all_stats_all_features.new_variability(end+1)=new_variability;
-        all_stats_all_features.original_variability(end+1)=original_variability;
-        all_stats_all_features.feature_name(end+1)={all_features(feature_index)};
-    end
-catch
-    fprintf('A feature stats failed to be processed : %s',all_features(feature_index));
+
 end
-end
-% [kept_indices,narrowed_names_list]=narrow_by_feature_type(all_features,'morph')
-% cov_morph=cov_all(kept_indices);
-keep all_stats_all_features
-save('COV workspace')
 end

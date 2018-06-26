@@ -22,7 +22,7 @@ all_features_files_original=dir(strcat('features_from_original/',all_features_fo
 load(strcat('features_from_original/',all_features_folders(1).name,'/',all_features_files_original(1).name));
 all_features=fieldnamesr(radiomics.image);
 clear radiomics
-skipped_features=4;
+skipped_features0;
 patient_names={};
 for patient_index=1:numel(all_features_folders)
     patient_name=all_features_folders(patient_index).name;
@@ -32,9 +32,6 @@ for patient_index=1:numel(all_features_folders)
 end
 ignored_patients=[];
 for feature_index=1+skipped_features:numel(all_features)
-    if ~isdir(strcat('features_from_majority_sorted_by_volume/',all_features_folders(feature_index).name))
-        mkdir(strcat('features_from_majority_sorted_by_volume/',all_features_folders(feature_index).name));
-    end
     sorted_original_features_all_patients=zeros(numel(all_features_folders),numel(all_features_files_original));
     interpolated_majority_features_all_patients=sorted_original_features_all_patients;
     for features_folder_index=1:numel(all_features_folders)
@@ -141,7 +138,10 @@ continue
     BlandAltman(sorted_original_features_all_patients, interpolated_majority_features_all_patients,label,[tit ' (numbers, forced 0 intercept, and fixed BA y-axis limits)'],gnames,'corrInfo',corrinfo,'baInfo',BAinfo,'axesLimits',limits,'colors',colors,'symbols','Num','baYLimMode','square','forceZeroIntercept','on','baStatsMode','Gaussian')
     
     figHandles = findobj('Type', 'figure');
-    set(figHandles(1), 'Position', [50, 50, 50, 50])
+%     set(figHandles(1), 'Position', [50, 50, 50, 50])
+if ~isdir(strcat('Bland_Altman_plot','/',all_features_folders(feature_index).name,'/',feature_type,'/',feature_name_complement))
+    mkdir(strcat('Bland_Altman_plot','/',all_features_folders(feature_index).name,'/',feature_type,'/',feature_name_complement));
+end
     save_name=strcat('Bland_Altman_plot','/',all_features_folders(feature_index).name,'/',feature_type,'/',feature_name_complement,feature_plot_name,'.png');
     saveas(figHandles(1),save_name);
     % Repeat analysis using non-parametric analysis, no warning should appear.

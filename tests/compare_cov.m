@@ -131,39 +131,39 @@ for feature_index=1:numel(all_features)
     interpolated_majority_feature_all_patients(ignored_lesions_indexes,:)=[];
     %Process lesion_wise variability for both original and new ROIs (one column = 1 same-related size ROI
     %for all lesions ie all smallest ROIs altogether, except they are not the same volume)
-    lesion_wise_COVs_new=[];
-    lesion_wise_COVs_orig=[];
-    lesion_wise_means_new=[];
-    lesion_wise_means_orig=[];
+    all_mean_new=[];
+    all_mean_orig=[];
+    all_cov_new=[];
+    all_cov_orig=[];
+    roi_wise_variations_new=[];
+    roi_wise_variations_orig=[];
     for lesion_index_recap=1:size(sorted_original_feature_all_patients,1)
         %Process coefficient of variation
         %Note : One feature will not vary in certain circumstances ie stats
         %min, so the cov will be Nan
-        [cov_new,mean_new]=coef_v(interpolated_majority_feature_all_patients(lesion_index_recap,:))
-        [cov_orig,mean_orig]=coef_v(sorted_original_feature_all_patients(lesion_index_recap,:))
-        lesion_wise_COVs_new(end+1)=cov_new;
-        lesion_wise_COVs_orig(end+1)=cov_orig;
-        lesion_wise_means_new(end+1)=mean_new;
-        lesion_wise_means_orig(end+1)=mean_orig;
+        [cov_new,mean_new]=coef_v(interpolated_majority_feature_all_patients(lesion_index_recap,:));
+        [cov_orig,mean_orig]=coef_v(sorted_original_feature_all_patients(lesion_index_recap,:));
+        all_mean_new(end+1)=mean_new;
+        all_mean_orig(end+1)=mean_orig;
+        all_cov_new(end+1)=cov_new;
+        all_cov_orig(end+1)=cov_orig;
     end
-    
-try
-    original_variability=struct();
-    new_variability=original_variability;
-    [original_variability.Lesion_wise_mean_variation,~]=coef_v(lesion_wise_means_orig);
-    original_variability.Lesion_wise_cov_mean=mean(lesion_wise_COVs_orig);
-    [original_variability.ROI_wise_mean_variation,~]=coef_v(lesion_wise_means_orig);
-    original_variability.ROI_wise_cov_mean=mean(lesion_wise_COVs_orig);
-    
+        try
     %Lesion wise variabilities are processed on a special way, as
     %processing the mean or cov of a column does not maks sense (Same ROIs indexes
     %are not related with each other in any way)
-    new_variability.Lesion_wise_mean_variation=coef_v(lesion_wise_means_new);
-    new_variability.Lesion_wise_cov_mean=mean(lesion_wise_COVs_new);
-    new_variability.ROI_wise_mean_variation=coef_v(lesion_wise_means_new);
-    new_variability.ROI_wise_cov_mean=mean(lesion_wise_COVs_new);
-    %Process ROI_wise variability for both original and new ROIs (one column = all ROIs
-    %for 1 lesion)
+    lesion_wise_variations_new=coef_v(all_mean_new);
+    lesion_wise_variations_orig=coef_v(all_mean_orig);
+    roi_wise_variations_new=mean(all_cov_new);
+    roi_wise_variations_orig=mean(all_cov_orig);
+    
+    
+    original_variability=struct();
+    new_variability=struct();
+    original_variability.lesion_wise_variations=lesion_wise_variations_orig;
+    original_variability.roi_wise_variations=roi_wise_variations_orig;
+    new_variability.lesion_wise_variations=lesion_wise_variations_new;
+    new_variability.roi_wise_variations=roi_wise_variations_new;
     
     if ~isequal(exist('all_stats_all_features'),1)
         all_stats_all_features=struct('new_variability',new_variability);
@@ -174,9 +174,9 @@ try
         all_stats_all_features.original_variability(end+1)=original_variability;
         all_stats_all_features.feature_name(end+1)={all_features(feature_index)};
     end
-catch
-    fprintf('A feature stats failed to be processed : %s',all_features(feature_index));
-end
+        catch
+            fprintf('A feature stats failed to be processed : %s',all_features{feature_index});
+        end
 end
 % [kept_indices,narrowed_names_list]=narrow_by_feature_type(all_features,'morph')
 % cov_morph=cov_all(kept_indices);

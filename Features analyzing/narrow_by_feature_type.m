@@ -15,7 +15,8 @@
 function [kept_indices,narrowed_names_list]=narrow_by_feature_type(names_list,feature_type)
 kept_indices=[];
 for feature_number=1:numel(names_list)
-    feature_name=names_list{feature_number};
+    %     feature_name=names_list{feature_number};
+    feature_name=names_list{feature_number}{1};
     cur_feature_type=strsplit(feature_name,'.');
     cur_feature_type=cur_feature_type(1);
     if isequal(feature_type,cur_feature_type{1})

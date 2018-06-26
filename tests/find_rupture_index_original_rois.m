@@ -69,14 +69,19 @@ for features_folder_index=1:numel(all_features_folders)
             feature_plot_name=strrep(feature_plot_name,'_',' ');
             figure('name',all_features{feature_index},'visible','off');
             try
-                p=plot(sorted_volumes,sorted_feature_values);
-                title(strcat('Feature'," '",feature_plot_name,"'",' evolution'));
-                xlabel('ROI volume');
+                p=plot(sorted_feature_values);
+                legend('Original values');
+                title(strcat('Original feature'," '",feature_plot_name,"'",' evolution'));
+                xlabel('ROI index');
                 ylabel('Feature value');
-                if ~isdir(strcat('original_features_sorted_by_volume/',all_features_folders(features_folder_index).name,'/',feature_type,'/',feature_name_complement));
+                figHandles = findobj('Type', 'figure');                
+               if ~isdir(strcat('original_features_sorted_by_volume/',all_features_folders(features_folder_index).name,'/',feature_type,'/',feature_name_complement))
                     mkdir(strcat('original_features_sorted_by_volume/',all_features_folders(features_folder_index).name,'/',feature_type,'/',feature_name_complement));
                 end
-                saveas(p,strcat('original_features_sorted_by_volume/',all_features_folders(features_folder_index).name,'/',feature_type,'/',feature_name_complement,'/',feature_plot_name,'.png'));
+             saveas(figHandles(1),strcat('original_features_sorted_by_volume/',all_features_folders(features_folder_index).name,'/',feature_type,'/',feature_name_complement,'/',feature_plot_name,'.png'));
+            
+             close all
+            
             catch
                 %Unprocessed features such as moran will be caught here, just
                 %ignore it

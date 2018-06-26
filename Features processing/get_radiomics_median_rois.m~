@@ -81,12 +81,11 @@ for data=all_data
         %Compute radiomics features
         radiomics=get_radiomics_one_roi(volObj,roiObj,imParamScan);
         %Generate name of file to be saved
-        roi_vol=numel(new_roi);
-        save_name=strcat(save_folder,'/ROI_vol_',num2str(roi_vol));
         
-        save_data=struct('ROI',new_roi_matrix,'radiomics',radiomics);
+        save_name=strcat(save_folder,'/',new_roi_type{1});
+        
         %save features in proper container
-        save(save_name,'save_data');
+        save(save_name,'radiomics');
     end
     processed_data=processed_data+1;
     fprintf('%i of %i data files were processed\n',processed_data,numel(all_data));

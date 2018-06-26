@@ -12,7 +12,7 @@
 %The above copyright notice and this permission notice shall be included in all
 %copies or substantial portions of the Software
 
-function [new_ROIs,shrink_thresholds,expand_thresholds]= genROIs_simple(roiObj,world_extent,range,nIter)
+function [all_simple_rois,shrink_thresholds,expand_thresholds]= genROIs_simple(roiObj,world_extent,range,nIter)
 %range is the size of the area to be considered around each point for growth or shrink.
 %threshold represents how easy it will be to grow or shrink. 0 will always
 %grow, 1 will always shrink
@@ -119,11 +119,12 @@ end
 
 %Now return ROIs with full generation data
 keep all_simple_rois shrink_thresholds expand_thresholds range mask_type
+new_ROIs=table;
 iter_names=fieldnames(all_simple_rois);
 for iter=1:numel(iter_names)
     thresh_names=fieldnames(all_simple_rois.(iter_names{iter}));
     for thresh=1:numel(thresh_names)
-        roi={find(all_simple_rois.(iter_names{iter}).(thresh_names{thresh}).original_scale)};
+        roi=all_simple_rois.(iter_names{iter}).(thresh_names{thresh}).original_size;
         gen_data=struct('thresh',thresh_names{thresh},'iteration',iter_names{iter},'mask_type',mask_type,'mask_size',range);
         gen_type='simple_conv';
         roi_table=table;
@@ -131,7 +132,7 @@ for iter=1:numel(iter_names)
         roi_table.gen_data=gen_data;
         roi_table.gen_type=gen_type;
         try
-            new_ROIs(end+1,:)=roi_table;
+            new_ROIsT(end+1:end+4,:)=roi_table;
         catch
             new_ROIs=roi_table;
         end

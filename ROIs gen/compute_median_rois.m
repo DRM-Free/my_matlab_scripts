@@ -17,7 +17,7 @@ all_data=dir('Simplified_data/*.mat');
 all_data=all_data.';
 
 %Remove all_data elements that have already been processed (for testing only)
-already_processed_labels={'PET'};
+already_processed_labels={'5' '6' '8'};
 % already_processed_labels=[];
 %11_PET keeps throwing warnings. Are those ROIs too small ?
 already_processed=zeros(1,numel(all_data));
@@ -31,9 +31,17 @@ all_data(already_processed==1)=[];
 
 for data=all_data
     fprintf('Processing data file %s\n',data.name);
+    if ~isequal(strfind(data.name,'CTscan'),[])
+       modality='CT';
+           range=10;
+    else
+        modality='PET';
+            range=3;
+    end
     %Loading ROIs (which are already in the same referential, but still in a reduced form, thus we need to reconstruct full matrix)
     load(strcat('Simplified_data/',data.name,'/ROIs.mat'));
     load(strcat('Simplified_data/',data.name,'/spatial_ref.mat'));
+    
     all_rois=zeros([new_spatial_ref.ImageSize(1),new_spatial_ref.ImageSize(2),new_spatial_ref.ImageSize(3),numel(all_rois_compressed)]);;
     all_rois=uint8(all_rois);
     for roi_index=1:numel(all_rois_compressed)
@@ -59,12 +67,14 @@ for data=all_data
     majority_roiObj=struct('spatialRef',new_spatial_ref,'data',majority_roi);
     
     %Simple ROI gen parameters
-    range=5;
-    nIter=10;
+    nIter=12;
     world_extent=[new_spatial_ref.PixelExtentInWorldX,new_spatial_ref.PixelExtentInWorldY,new_spatial_ref.PixelExtentInWorldZ];
     %Now compute new ROIs from majority ROI
     [newROIs,shrink_thresholds,expand_thresholds]=genROIs_simple(majority_roiObj,world_extent,range,nIter);
-    [~,kept_ROIs]=dice_from_simple(newROIs,majority_roi,shrink_thresholds,expand_thresholds,nIter);
+    majority_volume=numel(find(majority_roi));
+%     visualize_all_ROIs(newROIs);
+    selected_rois=select_rois(modality, majority_volume,newROIs,shrink_thresholds,expand_thresholds,nIter);
+%     [~,kept_ROIs]=dice_from_simple(newROIs,majority_roi,shrink_thresholds,expand_thresholds,nIter);
     
     %Saving new ROIs and majority ROIs as an array of non-zero indexes
     majority_roi=find(majority_roi);
@@ -72,9 +82,9 @@ for data=all_data
         mkdir(strcat('Simplified_data/',data.name,'/New_ROIs'));
     end
     
-    save_name=strcat('Simplified_data/',data.name,'/New_ROIs');
-    save(strcat(save_name,'/Majority'),'majority_roi');
-    save(strcat(save_name,'/New_from_majority'),'kept_ROIs');
+%     save_name=strcat('Simplified_data/',data.name,'/New_ROIs');
+%     save(strcat(save_name,'/Majority'),'majority_roi');
+%     save(strcat(save_name,'/New_from_majority_2'),'selected_rois');
     
 end
 end
