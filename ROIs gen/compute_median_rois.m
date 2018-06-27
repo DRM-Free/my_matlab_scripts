@@ -33,10 +33,10 @@ for data=all_data
     fprintf('Processing data file %s\n',data.name);
     if ~isequal(strfind(data.name,'CTscan'),[])
        modality='CT';
-           range=10;
+           range=9;
     else
         modality='PET';
-            range=3;
+            range=5;
     end
     %Loading ROIs (which are already in the same referential, but still in a reduced form, thus we need to reconstruct full matrix)
     load(strcat('Simplified_data/',data.name,'/ROIs.mat'));
@@ -67,7 +67,7 @@ for data=all_data
     majority_roiObj=struct('spatialRef',new_spatial_ref,'data',majority_roi);
     
     %Simple ROI gen parameters
-    nIter=12;
+    nIter=30;
     world_extent=[new_spatial_ref.PixelExtentInWorldX,new_spatial_ref.PixelExtentInWorldY,new_spatial_ref.PixelExtentInWorldZ];
     %Now compute new ROIs from majority ROI
     [newROIs,shrink_thresholds,expand_thresholds]=genROIs_simple(majority_roiObj,world_extent,range,nIter);

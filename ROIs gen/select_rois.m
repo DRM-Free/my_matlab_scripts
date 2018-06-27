@@ -12,11 +12,12 @@
 %The above copyright notice and this permission notice shall be included in all
 %copies or substantial portions of the Software
 
-function newROIs=select_rois(modality_type, base_volume,newROIs,shrink_thresholds,expand_thresholds,nIter)
+function selected_ROIs=select_rois(modality_type, base_volume,newROIs,shrink_thresholds,expand_thresholds,nIter)
 %Eliminating null ROIs before start
-seg=newROIs.segment;
+selected_ROIs=newROIs;
+seg=selected_ROIs.segment;
 zero_rois=find(cellfun(@isempty,seg));
-newROIs(zero_rois,:)=[];
+selected_ROIs(zero_rois,:)=[];
 if isequal(modality_type,'PET')
     size_threshold=1000;
 else
@@ -33,9 +34,9 @@ selected_volumes=[];
 removed_indexes=[];
 rel_vars=[];
 all_volumes=[];
-for new_roi=1:size(newROIs,1)
+for new_roi=1:size(selected_ROIs,1)
     try
-        vol_value=numel(newROIs{new_roi,'segment'}{1});
+        vol_value=numel(selected_ROIs{new_roi,'segment'}{1});
     catch
     end
     if vol_value<size_threshold
@@ -43,14 +44,30 @@ for new_roi=1:size(newROIs,1)
     else
         thresh_value=thresh_values.big_rois;
     end
-    rel_var=abs(base_volume-vol_value)/base_volume;
+    rel_var=(vol_value-base_volume)/base_volume;
     rel_vars(end+1)=rel_var;
     all_volumes(end+1)=vol_value;
-    if (abs(rel_var)<thresh_value &vol_value>8)
+    if (abs(rel_var)<thresh_value &&vol_value>8)
         selected_volumes(end+1)=vol_value;
     else
         removed_indexes(end+1)=new_roi;
     end
 end
-newROIs(removed_indexes,:)=[];
+selected_ROIs(removed_indexes,:)=[];
+close all
+plot(all_volumes); ,hold on,
+plot(1:numel(all_volumes),zeros(1,numel(all_volumes))+base_volume);
+
+%Visualize some ROIs results
+% indices=[1 5 10 15 20 25];
+% indices=[2 4 6 8 10];
+indices=[1 2 3 4 5];
+
+ROI1=matrix_from_indices(newROIs{indices(1),'gen_data'}.roi_size,newROIs{indices(1),'segment'}{1});
+ROI2=matrix_from_indices(newROIs{indices(2),'gen_data'}.roi_size,newROIs{indices(2),'segment'}{1});
+ROI3=matrix_from_indices(newROIs{indices(3),'gen_data'}.roi_size,newROIs{indices(3),'segment'}{1});
+ROI4=matrix_from_indices(newROIs{indices(4),'gen_data'}.roi_size,newROIs{indices(4),'segment'}{1});
+ROI5=matrix_from_indices(newROIs{indices(5),'gen_data'}.roi_size,newROIs{indices(5),'segment'}{1});
+keep ROI1 ROI2 ROI3 ROI4 ROI5 selected_ROIs
+save('ROIs_plot');
 end
