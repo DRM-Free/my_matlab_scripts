@@ -22,7 +22,7 @@ processed_data=0;
 
 %Remove all_data elements that have already been processed
 % example : already_processed_labels=[{'05'};{'06'};{'08'};{'10'};{'11'};{'12_CT'}];
-already_processed_labels={'05_CT'};
+already_processed_labels={};
 already_processed=zeros(1,numel(all_data));
 for processed_number=1:numel(already_processed_labels)
     new_processed=arrayfun(@(x) contains(x.name,already_processed_labels{processed_number}),all_data);
@@ -52,7 +52,7 @@ for data=all_data
     majority_gen_type='majority';
     majority_gen_data='none';
     majority_table=table;
-    majority_table.segment={majority_roi};
+    majority_table.segment={majority_roi_matrix};
     majority_table.gen_type=majority_gen_type;
     majority_table.gen_data=majority_gen_data;
     
@@ -64,8 +64,7 @@ for data=all_data
     clear new_volObj_data majority_roi_matrix
     
 %     radiomics_values=get_radiomics_one_roi(volObj,roiObj,imParamScan);
-    radiomics_values=[]; %For testing
-    
+    radiomics_values=[];
     save_folder=strcat('features_from_majority_2/',data.name);
     if ~isdir(save_folder)
         mkdir(save_folder);
@@ -73,12 +72,12 @@ for data=all_data
     save_name=strcat(save_folder,'/','majority');
     radiomics=struct('radiomics_values',radiomics_values,'ROI_info',majority_table);
     save(save_name,'radiomics');
-    clear majority_gen_data majority_gen_type majority_roi majority_table radiomics_values
+    clear majority_gen_data majority_gen_type majority_roi majority_table radiomics_values roiObj
     %Processing new ROIs features
     
     for selected_ROI_index=1:size(selected_rois,1)
-        new_roi=selected_rois{selected_ROI_index,'segment'}{1};
-        ROI_info=selected_rois(selected_ROI_index,:);
+        new_roi=selected_rois{selected_ROI_index,'segment'};
+        ROI_info=selected_rois{selected_ROI_index,'ROI_info'};
         %Retrieving ROI in a matrix form from non-zero indices
         new_roi_matrix=matrix_from_indices(new_spatial_ref.ImageSize,new_roi);
         roiObj.data=new_roi_matrix;
@@ -88,9 +87,9 @@ for data=all_data
         roi_vol=numel(new_roi);
         save_name=strcat(save_folder,'/ROI_vol_',num2str(roi_vol));
         
-        radiomics=struct('ROI_info',ROI_info,'radiomics_values',radiomics_values);
+        save_data=struct('ROI',new_roi_matrix,'radiomics_values',radiomics_values);
         %save features in proper container
-        save(save_name,'radiomics');
+        save(save_name,'save_data');
     end
     processed_data=processed_data+1;
     fprintf('%i of %i data files were processed\n',processed_data,numel(all_data));

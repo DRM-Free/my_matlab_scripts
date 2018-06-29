@@ -17,7 +17,7 @@ all_data=dir('Simplified_data/*.mat');
 all_data=all_data.';
 
 %Remove all_data elements that have already been processed (for testing only)
-already_processed_labels={'5' '6' '8'};
+already_processed_labels={'05'};
 % already_processed_labels=[];
 %11_PET keeps throwing warnings. Are those ROIs too small ?
 already_processed=zeros(1,numel(all_data));
@@ -36,7 +36,7 @@ for data=all_data
            range=9;
     else
         modality='PET';
-            range=5;
+            range=9;
     end
     %Loading ROIs (which are already in the same referential, but still in a reduced form, thus we need to reconstruct full matrix)
     load(strcat('Simplified_data/',data.name,'/ROIs.mat'));
@@ -67,7 +67,7 @@ for data=all_data
     majority_roiObj=struct('spatialRef',new_spatial_ref,'data',majority_roi);
     
     %Simple ROI gen parameters
-    nIter=30;
+    nIter=20;
     world_extent=[new_spatial_ref.PixelExtentInWorldX,new_spatial_ref.PixelExtentInWorldY,new_spatial_ref.PixelExtentInWorldZ];
     %Now compute new ROIs from majority ROI
     [newROIs,shrink_thresholds,expand_thresholds]=genROIs_simple(majority_roiObj,world_extent,range,nIter);
@@ -82,9 +82,9 @@ for data=all_data
         mkdir(strcat('Simplified_data/',data.name,'/New_ROIs'));
     end
     
-%     save_name=strcat('Simplified_data/',data.name,'/New_ROIs');
-%     save(strcat(save_name,'/Majority'),'majority_roi');
-%     save(strcat(save_name,'/New_from_majority_2'),'selected_rois');
+    save_name=strcat('Simplified_data/',data.name,'/New_ROIs');
+    save(strcat(save_name,'/Majority'),'majority_roi');
+    save(strcat(save_name,'/New_from_majority_2'),'selected_rois');
     
 end
 end

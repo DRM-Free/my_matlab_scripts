@@ -34,6 +34,8 @@ selected_volumes=[];
 removed_indexes=[];
 rel_vars=[];
 all_volumes=[];
+new_expanded_number=0;
+new_shrink_number=0;
 for new_roi=1:size(selected_ROIs,1)
     try
         vol_value=numel(selected_ROIs{new_roi,'segment'}{1});
@@ -47,27 +49,41 @@ for new_roi=1:size(selected_ROIs,1)
     rel_var=(vol_value-base_volume)/base_volume;
     rel_vars(end+1)=rel_var;
     all_volumes(end+1)=vol_value;
+    %remove same volume ROIs
     if (abs(rel_var)<thresh_value &&vol_value>8)
-        selected_volumes(end+1)=vol_value;
+        if isequal(numel(find(selected_volumes==vol_value)),0)
+            selected_volumes(end+1)=vol_value;
+            if rel_var<0
+                new_shrink_number=new_shrink_number+1;
+            else
+                new_expanded_number=new_expanded_number+1;
+            end
+        else
+            removed_indexes(end+1)=new_roi;
+        end
     else
         removed_indexes(end+1)=new_roi;
     end
 end
 selected_ROIs(removed_indexes,:)=[];
-close all
-plot(all_volumes); ,hold on,
-plot(1:numel(all_volumes),zeros(1,numel(all_volumes))+base_volume);
-
-%Visualize some ROIs results
-% indices=[1 5 10 15 20 25];
-% indices=[2 4 6 8 10];
-indices=[1 2 3 4 5];
-
-ROI1=matrix_from_indices(newROIs{indices(1),'gen_data'}.roi_size,newROIs{indices(1),'segment'}{1});
-ROI2=matrix_from_indices(newROIs{indices(2),'gen_data'}.roi_size,newROIs{indices(2),'segment'}{1});
-ROI3=matrix_from_indices(newROIs{indices(3),'gen_data'}.roi_size,newROIs{indices(3),'segment'}{1});
-ROI4=matrix_from_indices(newROIs{indices(4),'gen_data'}.roi_size,newROIs{indices(4),'segment'}{1});
-ROI5=matrix_from_indices(newROIs{indices(5),'gen_data'}.roi_size,newROIs{indices(5),'segment'}{1});
-keep ROI1 ROI2 ROI3 ROI4 ROI5 selected_ROIs
-save('ROIs_plot');
+keep selected_ROIs
+% close all
+% figure();
+% plot(all_volumes); ,hold on,
+% plot(1:numel(all_volumes),zeros(1,numel(all_volumes))+base_volume);
+% figure();
+% plot(sort(rel_vars));
+% %Visualize some ROIs results
+% indices=[20 40 60 80 100];
+% % indices=[1 5 10 15 20 25];
+% % indices=[2 4 6 8 10];
+% % indices=[1 2 3 4 5];
+% 
+% ROI1=matrix_from_indices(newROIs{indices(1),'gen_data'}.roi_size,newROIs{indices(1),'segment'}{1});
+% ROI2=matrix_from_indices(newROIs{indices(2),'gen_data'}.roi_size,newROIs{indices(2),'segment'}{1});
+% ROI3=matrix_from_indices(newROIs{indices(3),'gen_data'}.roi_size,newROIs{indices(3),'segment'}{1});
+% ROI4=matrix_from_indices(newROIs{indices(4),'gen_data'}.roi_size,newROIs{indices(4),'segment'}{1});
+% ROI5=matrix_from_indices(newROIs{indices(5),'gen_data'}.roi_size,newROIs{indices(5),'segment'}{1});
+% keep ROI1 ROI2 ROI3 ROI4 ROI5 selected_ROIs new_shrink_number new_expanded_number
+% save('ROIs_plot');
 end

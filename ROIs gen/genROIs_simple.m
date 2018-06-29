@@ -22,8 +22,8 @@ ROI_normalized_ref=roiObj_regular.data;
 
 % shrink_thresholds=[0.35]; % 0.35 Perfect shrink threshold for removing a single voxel with a mask size of 15
 % expand_thresholds=[0.85]; % 0.85Perfect expand threshold for adding a single voxel with a mask size of 15
-expand_thresholds=[0.75];
-shrink_thresholds=[];
+expand_thresholds=[0.81 0.85];
+shrink_thresholds=[0.35 0.31];
 
 mask_type='spherical_simple';
 mask=genMask(range,mask_type);
@@ -57,8 +57,6 @@ for expand_thresh_number=1:numel(expand_thresholds)
         expand_roi=expand_roi(1+pad_num:end-pad_num,1+pad_num:end-pad_num,1+pad_num:end-pad_num);
 
         cvThresh=expand_thresholds(expand_thresh_number)*maxCv;
-        %         new_expand_roi(new_expand_roi<=cvThresh)=0;
-        %         new_expand_roi(new_expand_roi>0)=1;
         new_expand_roi=expand_roi;
         new_expand_roi(conv<cvThresh)=1;
         
@@ -108,9 +106,6 @@ for shrink_thresh_number=1:numel(shrink_thresholds)
         end
         conv=convn(1-shrink_ROI,mask,'same');
         cvThresh=shrink_thresholds(shrink_thresh_number)*maxCv;
-        %                 new_shrink_ROI(new_shrink_ROI>=cvThresh)=-1;
-        %                 new_shrink_ROI(new_shrink_ROI>0)=0;
-        %                 new_shrink_ROI(new_shrink_ROI==-1)=1;
         new_shrink_ROI=shrink_ROI;
         new_shrink_ROI(conv>cvThresh)=0;
         
@@ -147,9 +142,6 @@ for iter=1:numel(iter_names)
         gen_data=struct('thresh',thresh_names{thresh},'iteration',iter_names{iter},'mask_type',mask_type,'mask_size',range, 'roi_size',size(refROI));
         gen_type='simple_conv';
         roi_table=table;
-        if numel(roi{1})<numel(find(refROI))
-          %This is a shrink ! 
-        end
         roi_table.segment=roi;
         roi_table.gen_data=gen_data;
         roi_table.gen_type=gen_type;
