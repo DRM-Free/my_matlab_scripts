@@ -22,7 +22,7 @@ processed_data=0;
 
 %Remove all_data elements that have already been processed
 % example : already_processed_labels=[{'05'};{'06'};{'08'};{'10'};{'11'};{'12_CT'}];
-already_processed_labels={'05_CT'};
+already_processed_labels={};
 already_processed=zeros(1,numel(all_data));
 for processed_number=1:numel(already_processed_labels)
     new_processed=arrayfun(@(x) contains(x.name,already_processed_labels{processed_number}),all_data);
@@ -63,8 +63,8 @@ for data=all_data
     %Clear memory usage a little
     clear new_volObj_data majority_roi_matrix
     
-%     radiomics_values=get_radiomics_one_roi(volObj,roiObj,imParamScan);
-    radiomics_values=[]; %For testing
+    radiomics_values=get_radiomics_one_roi(volObj,roiObj,imParamScan);
+%     radiomics_values=[]; %For testing
     
     save_folder=strcat('features_from_majority_2/',data.name);
     if ~isdir(save_folder)

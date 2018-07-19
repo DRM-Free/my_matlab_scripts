@@ -1,71 +1,133 @@
-%MIT License
+function ICC_table=ICC_original(features_table_file)
+mod='PET';
+% mod='CT';
+ROI_origin='new';
+% ROI_origin='original';
+constraint='_constrained_volume';
+% constraint='';
+load(features_table_file);
+all_rois_all_lesions_features_table=all_rois_all_lesions_features_table(all_rois_all_lesions_features_table.feature_type=='texture',:);
+algos=unique(all_rois_all_lesions_features_table.algo);
+bin_counts=unique(all_rois_all_lesions_features_table.bin_count);
+lesion_names=unique(all_rois_all_lesions_features_table.lesion_name);
+scales=unique(all_rois_all_lesions_features_table.scale);
+texture_types=unique(all_rois_all_lesions_features_table.texture_type);
 
-%Copyright (c) 2018 Anaël Leinert
-
-%Permission is hereby granted, free of charge, to any person obtaining a copy
-%of this software and associated documentation files (the "Software"), to deal
-%in the Software without restriction, including without limitation the rights
-%to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-%copies of the Software, and to permit persons to whom the Software is
-%furnished to do so, subject to the following conditions:
-
-%The above copyright notice and this permission notice shall be included in all
-%copies or substantial portions of the Software
-
-function ICC_original()
-%Features discriminative characterisation from original ROIs.
-lesions_folders=dir('features_from_original/*.mat');
-for lesion_folder_index=1:numel(lesions_folders)
-    ROIs_files=dir(strcat('features_from_original/',lesions_folders(lesion_folder_index).name,'/*.mat'));
-    Lesion_name_parts=strsplit(lesions_folders(lesion_folder_index).name,'.');
-    lesion_name=string(Lesion_name_parts{1});
-    fprintf(strcat('Processing lesion : ', lesion_name,'\n'));
-    for ROI_file_index=1:numel(ROIs_files)
-        load(strcat('features_from_original/',lesions_folders(lesion_folder_index).name,'/',ROIs_files(ROI_file_index).name));
-        if ~exist('all_features_names','var')
-            all_features_names=fieldnamesr(radiomics.image);
-        end
-        for feature_index=1:numel(all_features_names)
-            feature_name_parts=strsplit(all_features_names{feature_index},'.');
-            feature_type=string(feature_name_parts{1});
-            if isequal(feature_type,"texture")
-                texture_type=string(feature_name_parts{2});
-                feature_params=feature_name_parts{3};
-                feature_params_parts=strsplit(feature_params,'_');
-                algo=string(feature_params_parts{2});
-                scale=string(feature_params_parts{1});
-                bin_count=string(feature_params_parts{3});
-            else
-                texture_type="none";
-                algo="unused";
-                scale="unused";
-                bin_count="unused";
-            end
-            feature_name=string(feature_name_parts{end});
-            feature_value=get_inclusive_field(radiomics.image,all_features_names{feature_index});
-            % Setting all features falues in proper container
-            if ~isequal(feature_value,[])
-                one_roi_feature_table=table(lesion_name,feature_type,texture_type,feature_name,scale,algo,bin_count,feature_value);
-            else
-                %Deal with unprocessed features
-                one_roi_feature_table=table(lesion_name,feature_type,texture_type,feature_name,scale,algo,bin_count,"unprocessed");
-            end
-        end
-        if ~exist('all_rois_features_table','var')
-            all_rois_features_table=one_roi_feature_table;
-        else
-            all_rois_features_table=outerjoin(all_rois_features_table,one_roi_feature_table,'MergeKeys', true);
-        end
-    end
-    %Adding all feature values from this lesion
-    if ~exist('all_rois_all_lesions_features_table','var')
-        all_rois_all_lesions_features_table=all_rois_features_table;
-    else
-        all_rois_all_lesions_features_table=outerjoin(all_rois_all_lesions_features_table,all_rois_features_table,'MergeKeys', true);
-    end
-    fprintf('%i out of %i lesions folders were processed\n',lesion_folder_index,numel(lesions_folders));
+if strcmp(mod,'CT')
+    % Original CT bin orders
+    algo_FBN_bin_counts_indexes=[8 3 5 7];
+    algo_FBS_bin_counts_indexes=[2 4 6 1];
+else
+    % Original PET bin orders
+    algo_FBN_bin_counts_indexes=[8 4 6 7];
+    algo_FBS_bin_counts_indexes=[1 2 3 5];
 end
-% Now all features values were added to a single, easy to browse table.
-%Better save this table before proceeding to ICC
-save('Original_ROIs_features_table','all_rois_all_lesions_features_table');
+
+%Separate features values by parameter set
+%     params_sets_indexes=[];
+
+for texture_type_index=1:numel(texture_types)
+    if isequal(texture_types(texture_type_index),"none")
+        continue
+    end
+    load(features_table_file);
+    all_rois_all_lesions_features_table=all_rois_all_lesions_features_table(all_rois_all_lesions_features_table.feature_type=='texture',:);
+    texture_type_table=all_rois_all_lesions_features_table(all_rois_all_lesions_features_table.texture_type==texture_types(texture_type_index),:);
+    texture_type_table=texture_type_table(:,{'lesion_name','ROI_name','feature_name','scale','algo','bin_count','feature_value'});
+    clear all_rois_all_lesions_features_table
+    feature_names=unique(texture_type_table.feature_name);
+    for feature_name_index=1:numel(feature_names)
+        feature_name_table=texture_type_table(texture_type_table.feature_name==feature_names(feature_name_index),:);
+        feature_name_table=feature_name_table(:,{'lesion_name','ROI_name','scale','algo','bin_count','feature_value'});
+        
+        for scale_index=1:numel(scales)
+            for algo_index=1:numel(algos)
+                if isequal(strfind(algos(algo_index),"FBN"),[])
+                    %This is not an "equal" algo : apply non equal bin counts indexes
+                    bin_count_indexes=algo_FBS_bin_counts_indexes;
+                else
+                    bin_count_indexes=algo_FBN_bin_counts_indexes;
+                end
+                for bin_count_index=bin_count_indexes
+                    %             params_sets_indexes(end+1)=unique_param_set_index; %Just
+                    %             check out that indexes are actually unique (OK)
+                    paramset_row_index = find(feature_name_table.scale==scales(scale_index)...
+                        & feature_name_table.algo==algos(algo_index)...
+                        & feature_name_table.bin_count==bin_counts(bin_count_index));
+                    param_set_table=feature_name_table(paramset_row_index,:);
+                    feature_values_one_param_set={};
+                    for lesion_index=1:numel(lesion_names)
+                        %Find all ROIs names for current lesion
+                        ROI_names=unique(param_set_table.ROI_name);
+                        lesion_folder_name=lesion_names(lesion_index);
+                        if ~isequal(strfind(lesion_folder_name,"CT"),[])
+                            lesion_folder_name=strcat(lesion_folder_name,'.CTscan.mat');
+                        elseif ~isequal(strfind(lesion_folder_name,"PET"),[])
+                            lesion_folder_name=strcat(lesion_folder_name,'.PTscan.mat');
+                        end
+                        all_vols=get_original_vols(lesion_folder_name);
+                        min_vol = min(all_vols);
+                        max_vol = max(all_vols);
+                        lesion_indexes=param_set_table.lesion_name==lesion_names(lesion_index);
+                        feature_table_one_lesion=param_set_table(lesion_indexes,{'feature_value','ROI_name'});
+                        
+                        if strcmp('_constrained_volume',constraint)
+                            %we intend to ignore all unlikely volumes eg volumes
+                            %out of the original volumes bounds
+                            feature_values_one_lesion=[];
+                            ROI_names=feature_table_one_lesion.ROI_name;
+                            for ROI_name_index=1:numel(ROI_names)
+                                roi_name=ROI_names(ROI_name_index);
+                                cur_vol=strsplit(roi_name,'_');
+                                cur_vol=cur_vol(end);
+                                cur_vol=str2num(char(cur_vol));
+                                if or(cur_vol<min_vol,cur_vol>max_vol)
+                                    continue %skips current ROI
+                                else
+                                    feature_values_one_lesion(end+1)=feature_table_one_lesion.feature_value(ROI_name_index);
+                                end
+                            end
+                        else
+                            feature_values_one_lesion=feature_table_one_lesion.feature_value;
+                        end
+                        feature_values_one_lesion(isnan(feature_values_one_lesion))=[];
+                        feature_values_one_param_set(end+1)={feature_values_one_lesion};
+                        clear feature_values_one_lesion
+                    end
+                    %The whole feature values table is now constructed.
+                    %Proceed to ICC computation
+                    if ~isequal(numel(feature_values_one_param_set),0)
+                        ICC=one_way_ICC(feature_values_one_param_set);
+                        if isnan(ICC)
+                            
+                        end
+                    else
+                        ICC=nan(1,1);
+                    end
+                    clear feature_values_one_param_set
+                    if ~exist('ICC_table','var')
+                        ICC_table=table(ICC);
+                        ICC_table.algo=algos(algo_index);
+                        ICC_table.bin_count=bin_counts(bin_count_index);
+                        ICC_table.feature_name=feature_names(feature_name_index);
+                        ICC_table.texture_type=texture_types(texture_type_index);
+                        ICC_table.scale=scales(scale_index);
+                    else
+                        join_table=table(ICC);
+                        join_table.algo=algos(algo_index);
+                        join_table.bin_count=bin_counts(bin_count_index);
+                        join_table.feature_name=feature_names(feature_name_index);
+                        join_table.texture_type=texture_types(texture_type_index);
+                        join_table.scale=scales(scale_index);
+                        ICC_table=cat(1,join_table,ICC_table);
+                    end
+                end
+            end
+        end
+    end
+    clear texture_type_table
+    fprintf('%i out of %i texture types were processed\n', texture_type_index, numel(texture_types))
+end
+save_name=strcat('ICC_table_',ROI_origin,'_textures_',mod,constraint,'.mat');
+save(save_name,'ICC_table');
 end
